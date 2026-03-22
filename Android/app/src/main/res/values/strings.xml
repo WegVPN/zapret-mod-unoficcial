@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ZapretMod</string>
+    <string name="vpn_active">VPN Active</string>
+    <string name="vpn_inactive">VPN Inactive</string>
+    <string name="start_vpn">Start VPN</string>
+    <string name="stop_vpn">Stop VPN</string>
+    <string name="select_strategy">Select Strategy</string>
+    <string name="strategy_all">All Services</string>
+    <string name="strategy_discord">Discord</string>
+    <string name="strategy_youtube">YouTube</string>
+    <string name="strategy_telegram">Telegram</string>
+    <string name="notification_channel">VPN Service</string>
+    <string name="notification_title">ZapretMod</string>
+    <string name="notification_text">DPI Bypass Active</string>
+</resources>

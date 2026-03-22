@@ -1,368 +1,246 @@
-# ZapretGUI - Графическая оболочка для zapret с оптимизацией сети
+# ZapretMod - DPI Bypass for Discord, YouTube, Telegram
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey)]()
+[![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-lightgrey)]()
+[![Android](https://img.shields.io/badge/platform-Android%208.0+-brightgreen)]()
+[![Inspired by](https://img.shields.io/badge/inspired%20by-flowseal%2Fzapret--discord--youtube-orange)](https://github.com/flowseal/zapret-discord-youtube)
 
-**ZapretGUI** — это современное Windows-приложение с графическим интерфейсом для управления утилитой [zapret](https://github.com/bol-van/zapret) (обход DPI) с дополнительными функциями оптимизации сетевого подключения.
+**ZapretMod** — это кроссплатформенное приложение для обхода DPI-блокировок (Deep Packet Inspection) для **Discord**, **YouTube**, **Telegram** и других сервисов.
 
-![ZapretGUI Screenshot](docs/images/screenshot.png)
+Вдохновлено проектом [flowseal/zapret-discord-youtube](https://github.com/flowseal/zapret-discord-youtube) с добавлением современного GUI и поддержки Android.
 
-## 📋 Содержание
+## 📱 Платформы
 
-- [Возможности](#-возможности)
-- [Требования к системе](#-требования-к-системе)
-- [Установка](#-установка)
-- [Быстрый старт](#-быстрый-старт)
-- [Руководство по использованию](#-руководство-по-использованию)
-- [Профили](#-профили)
-- [Оптимизация сети](#-оптимизация-сети)
-- [Сборка из исходного кода](#-сборка-из-исходного-кода)
-- [Структура проекта](#-структура-проекта)
-- [FAQ](#-faq)
-- [Лицензия](#-лицензия)
+| Платформа | Статус | Требования |
+|-----------|--------|------------|
+| **Windows** | ✅ Готово | Windows 10/11 x64, .NET 8 |
+| **Android** | ✅ Готово | Android 8.0+ (API 26+) |
 
 ## ✨ Возможности
 
-### Обход блокировок
-- 🎯 **Готовые профили** для Discord, YouTube, Telegram и других сервисов
-- 🔧 **Гибкая настройка** параметров zapret (методы, домены, IP, порты)
-- 📊 **Встроенное логирование** работы zapret в реальном времени
-- 🔄 **Автозапуск** при старте системы
-- 📱 **Интеграция в системный трей** для быстрого доступа
+### Общие для обеих платформ
+- 🎯 **Готовые стратегии** для Discord, YouTube, Telegram
+- 🔄 **15+ стратегий** обхода (как в flowseal)
+- 🚀 **Автозапуск** при старте системы
+- 📊 **Логирование** работы
+- 🎨 **Тёмная тема** (Material You на Android)
 
-### Ускорение интернета
-- 🚀 **Оптимизация TCP/IP стека**:
-  - TCP Auto-Tuning
-  - ECN (Explicit Congestion Notification)
-  - TCP Timestamps
-  - Selective ACK
-  - Отключение алгоритма Nagle для игр/мессенджеров
-  - Поддержка BBR (для Windows 11 22H2+)
+### Windows версия
+- 🖥 **Современный WPF GUI** с системным треем
+- 🛠 **Windows Service** для автозапуска
+- 📋 **Batch-файлы** (как в flowseal)
+- 🔍 **Диагностика** и проверка настроек
+- 📦 **Установщик** (MSI/Inno Setup)
 
-- 🌐 **DNS оптимизация**:
-  - Быстрая смена DNS-серверов (Cloudflare, Google и др.)
-  - Очистка DNS-кэша
-  - Сброс к DHCP
+### Android версия
+- 📱 **Material Design 3** UI
+- 🔒 **VPN Service** для перехвата трафика
+- ⚡ **Jetpack Compose** современный интерфейс
+- 🔔 **Уведомления** в статус-баре
+- 🚀 **Auto-start** при загрузке устройства
 
-- 📶 **MTU оптимизация**:
-  - Автоматический подбор оптимального MTU
-  - Ручная настройка для каждого интерфейса
+## 📥 Установка
 
-### Дополнительные функции
-- 🎨 **Тёмная/светлая тема**
-- 💾 **Резервное копирование** настроек реестра
-- 🔙 **Точки восстановления** системы
-- 📤 **Экспорт/импорт** профилей и настроек
-- 🔒 **Запуск от администратора** (требуется для системных изменений)
+### Windows
 
-## 🖥 Требования к системе
-
-| Компонент | Минимальные требования |
-|-----------|----------------------|
-| ОС | Windows 10 x64 (версия 1903+) |
-| Фреймворк | .NET 8 Desktop Runtime |
-| Права | Администратор (для оптимизаций) |
-| RAM | 50 МБ |
-| Диск | 100 МБ |
-
-## 📦 Установка
-
-### Вариант 1: Установщик (рекомендуется)
-
-1. Скачайте установщик `ZapretGUI-Setup-1.0.0.exe` из [Releases](https://github.com/zapret-mod-unoficcial/releases)
-2. Запустите установщик от имени администратора
-3. Следуйте инструкциям мастера установки
-4. При необходимости установщик предложит установить .NET 8 Runtime
-
-### Вариант 2: Portable-версия
-
-1. Скачайте архив `ZapretGUI-Portable-1.0.0.zip`
+#### Вариант 1: Portable (рекомендуется)
+1. Скачайте `ZapretMod-v2.0.0-win-x64.zip` из [Releases](https://github.com/WegVPN/zapret-mod-unoficcial/releases)
 2. Распакуйте в любую папку
-3. Запустите `ZapretGUI.exe` от имени администратора
+3. **Скачайте [zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle/releases)** и скопируйте `winws.exe`, `WinDivert64.sys`, `WinDivert64.dll` в папку `bin\`
+4. Запустите `ZapretMod.exe` от имени администратора
 
-### Вариант 3: Сборка из исходного кода
+#### Вариант 2: Установщик
+1. Скачайте `ZapretMod-Setup-2.0.0.exe`
+2. Запустите установщик
+3. Следуйте инструкциям мастера
 
-См. раздел [Сборка из исходного кода](#-сборка-из-исходного-кода)
+#### Вариант 3: Из исходного кода
+```bash
+cd Windows
+dotnet restore
+dotnet publish -c Release -r win-x64 --self-contained false
+```
+
+### Android
+
+#### Вариант 1: APK из Releases
+1. Скачайте `ZapretMod-v2.0.0.apk` из [Releases](https://github.com/WegVPN/zapret-mod-unoficcial/releases)
+2. Разрешите установку из неизвестных источников
+3. Установите APK файл
+4. Запустите приложение и предоставьте разрешение на VPN
+
+#### Вариант 2: Сборка из исходного кода
+```bash
+cd Android
+# Откройте в Android Studio или используйте командную строку:
+./gradlew assembleRelease
+# APK будет в app/build/outputs/apk/release/
+```
 
 ## 🚀 Быстрый старт
 
-1. **Запустите ZapretGUI** от имени администратора
-2. **Укажите путь к zapret** в настройках (если не используется встроенный)
-3. **Выберите профиль** (например, "Discord")
-4. **Нажмите "Запустить"** для активации обхода блокировок
-5. **Проверьте работу** сервиса (Discord, YouTube и т.д.)
+### Windows
+1. Запустите **ZapretMod.exe** от имени администратора
+2. Выберите стратегию (например, "Discord + YouTube + Telegram")
+3. Нажмите **"▶ Запустить"**
+4. Проверьте работу сервисов
 
-## 📖 Руководство по использованию
+### Android
+1. Откройте приложение **ZapretMod**
+2. Выберите стратегию (Discord, YouTube, Telegram или All)
+3. Нажмите **"START VPN"**
+4. Подтвердите подключение VPN
+5. Готово! Трафик защищён
 
-### Вкладка "Обход блокировок"
+## 📋 Стратегии (как в flowseal/zapret-discord-youtube)
 
-#### Статус zapret
-- Индикатор текущего состояния (Работает/Остановлено)
-- Кнопка запуска/остановки процесса
+| Стратегия | Описание | Параметры |
+|-----------|----------|-----------|
+| **Discord + YouTube + Telegram** | Основная стратегия для всех сервисов | `--wf=l3 --dpi-desync=fake --dpi-desync-autottls=1` |
+| **FAKE TLS AUTO** | Автоматический fake TLS | `--dpi-desync-fake-tls=oob` |
+| **SIMPLE FAKE** | Простой fake метод | `--dpi-desync=simple-fake` |
+| **Discord Only** | Только Discord | `--domain-list=discord.txt` |
+| **YouTube Only** | Только YouTube | `--domain-list=youtube.txt` |
+| **Telegram Only** | Только Telegram | `--ip-list=telegram.txt` |
 
-#### Профиль
-| Элемент | Описание |
-|---------|----------|
-| Профиль | Выбор предустановленного или пользовательского профиля |
-| Интерфейс | Сетевой интерфейс для применения правил (Auto для автовыбора) |
-| Применить профиль | Перезапуск zapret с настройками выбранного профиля |
-
-#### Домены и IP для обхода
-- **Домены**: Список доменов через запятую (например: `discord.com,discord.gg`)
-- **IP адреса**: IP-адреса или подсети (например: `149.154.160.0/20`)
-
-#### Дополнительные параметры
-- **Метод**: Способ обхода DPI (`fake`, `http`, `tls`, `mix`)
-- **Аргументы**: Дополнительные аргументы командной строки zapret
-
-### Вкладка "Ускорение интернета"
-
-#### Оптимизация TCP
-| Опция | Описание |
-|-------|----------|
-| Оптимизировать TCP Auto-Tuning | Автоматическая настройка размера окна TCP |
-| Включить ECN | Уведомление о перегрузке без потери пакетов |
-| Включить TCP Timestamps | Улучшает оценку RTT |
-| Включить Selective ACK | Повторная передача только потерянных пакетов |
-| Отключить Nagle | Уменьшает задержку для игр/мессенджеров |
-| Включить BBR | Современный алгоритм контроля перегрузок (Windows 11 22H2+) |
-
-#### DNS настройки
-- **Первичный DNS**: Основной DNS-сервер (по умолчанию: `1.1.1.1` Cloudflare)
-- **Вторичный DNS**: Резервный DNS-сервер (по умолчанию: `1.0.0.1`)
-- **Кнопки**: Установить DNS, Очистить кэш DNS, Сбросить DNS
-
-#### MTU настройки
-- **Сетевой интерфейс**: Выбор интерфейса для настройки
-- **MTU**: Значение Maximum Transmission Unit
-- **Найти оптимальный**: Автоматический подбор через ping-тесты
-- **Установить MTU**: Применение выбранного значения
-- **Сбросить MTU**: Возврат к значению по умолчанию (1500)
-
-### Вкладка "Логи"
-- Просмотр логов zapret в реальном времени
-- Сохранение логов в файл
-- Очистка лога
-
-### Вкладка "Настройки"
-
-#### Общие настройки
-| Опция | Описание |
-|-------|----------|
-| Автозагрузка | Запуск приложения при старте Windows |
-| Запускать свёрнутым | Минимизация окна при запуске |
-| Сворачивать в трей | Скрытие в область уведомлений при сворачивании |
-| Проверять обновления | Автоматическая проверка новых версий |
-| Тёмная тема | Переключение между светлой и тёмной темой |
-
-#### Путь к zapret
-- Указание расположения исполняемого файла zapret
-- Кнопка "Обзор" для выбора файла
-
-#### Резервное копирование
-- **Создать точку восстановления**: Точка восстановления Windows перед изменениями
-- **Экспорт настроек**: Сохранение профилей и настроек в JSON
-- **Импорт настроек**: Загрузка ранее сохранённых настроек
-
-## 📁 Профили
-
-### Встроенные профили
-
-#### Discord
-```json
-{
-  "name": "Discord",
-  "domains": "discord.com,discord.gg,discordapp.com,discord.media",
-  "method": "fake",
-  "additionalArgs": "--dpi-desync=fake --dpi-desync-autottls=1"
-}
-```
-
-#### YouTube
-```json
-{
-  "name": "YouTube",
-  "domains": "youtube.com,ytimg.com,googlevideo.com,youtube-nocookie.com",
-  "method": "fake",
-  "additionalArgs": "--dpi-desync=fake --dpi-desync-autottls=1 --host-mismatch=1"
-}
-```
-
-#### Telegram
-```json
-{
-  "name": "Telegram",
-  "domains": "telegram.org,telegram.me,t.me",
-  "ips": "149.154.160.0/20,91.108.4.0/22",
-  "ports": "443,80,8443",
-  "method": "fake",
-  "additionalArgs": "--dpi-desync=fake"
-}
-```
-
-### Создание пользовательского профиля
-
-1. Выберите профиль "Custom"
-2. Настройте параметры (домены, IP, метод, аргументы)
-3. Сохраните настройки через "Экспорт настроек"
-
-## 🔧 Оптимизация сети
-
-### Рекомендуемые настройки для разных сценариев
-
-#### Для игр
-- ✅ Optimize TCP Auto-Tuning
-- ✅ Enable ECN
-- ✅ Disable Nagle для игр
-- MTU: 1492 (для PPPoE) или 1500 (для Ethernet)
-
-#### Для стриминга (YouTube, Twitch)
-- ✅ Optimize TCP Auto-Tuning
-- ✅ Enable Timestamps
-- ✅ Enable Selective ACK
-- DNS: Cloudflare (1.1.1.1) или Google (8.8.8.8)
-
-#### Для мессенджеров (Discord, Telegram)
-- ✅ Disable Nagle
-- ✅ Enable ECN
-- DNS: Cloudflare или Quad9 (9.9.9.9)
-
-### Сброс настроек
-
-Если после оптимизации возникли проблемы с сетью:
-
-1. Перейдите на вкладку "Ускорение интернета"
-2. Нажмите "Сбросить TCP настройки"
-3. Нажмите "Сбросить DNS"
-4. Перезагрузите компьютер
-
-## 🛠 Сборка из исходного кода
-
-### Требования для разработки
-
-- Visual Studio 2022 или JetBrains Rider
-- .NET 8 SDK
-- Inno Setup 6 (для создания установщика)
-
-### Шаги сборки
-
-```bash
-# Клонирование репозитория
-git clone https://github.com/zapret-mod-unoficcial/zapret-mod-unoficcial.git
-cd zapret-mod-unoficcial/ZapretGUI
-
-# Установка зависимостей
-dotnet restore
-
-# Сборка релизной версии
-dotnet publish -c Release -r win-x64 --self-contained false
-
-# Путь к скомпилированному приложению
-# bin\Release\net8.0-windows\publish\
-```
-
-### Создание установщика
-
-1. Установите [Inno Setup 6](https://jrsoftware.org/isdl.php)
-2. Откройте `Installer.iss` в Inno Setup Compiler
-3. Нажмите `Build` → `Compile`
-4. Установщик будет создан в папке `Output`
-
-## 📂 Структура проекта
+## 📁 Структура проекта
 
 ```
-ZapretGUI/
-├── Core/
-│   ├── ZapretManager.cs       # Управление процессом zapret
-│   ├── NetworkOptimizer.cs    # Оптимизация TCP/DNS/MTU
-│   ├── ProfileManager.cs      # Управление профилями
-│   └── AutoStartManager.cs    # Автозагрузка через Task Scheduler
-├── Resources/
-│   └── zapret.ico             # Иконка приложения
-├── Properties/
-│   ├── Resources.resx         # Ресурсы приложения
-│   └── Resources.Designer.cs  # Автогенерируемый код ресурсов
-├── MainForm.cs                # Главная форма с UI
-├── Program.cs                 # Точка входа
-├── ZapretGUI.csproj           # Проект .NET
-├── ZapretGUI.sln              # Решение Visual Studio
-├── app.manifest               # Манифест приложения (admin rights)
-├── Installer.iss              # Скрипт Inno Setup
-└── README.md                  # Документация
+zapret-mod-unoficcial/
+├── Windows/                    # Windows версия (WPF)
+│   ├── ZapretMod.sln
+│   ├── ZapretMod/             # GUI приложение
+│   │   ├── Core/
+│   │   │   ├── ZapretEngine.cs      # Управление winws.exe
+│   │   │   └── ServiceManager.cs    # Windows Service
+│   │   ├── MainWindow.xaml.cs       # Главный экран
+│   │   ├── SettingsWindow.xaml.cs   # Настройки
+│   │   └── DiagnosticsWindow.xaml.cs # Диагностика
+│   ├── ZapretMod.Service/   # Windows Service
+│   ├── general.bat          # Стратегии (как в flowseal)
+│   ├── service.bat          # Управление службой
+│   └── lists/               # Списки доменов
+│
+├── Android/                  # Android версия
+│   ├── app/
+│   │   └── src/main/java/com/zapretmod/app/
+│   │       ├── MainActivity.kt          # Главный экран (Compose)
+│   │       ├── service/
+│   │       │   └── ZapretVpnService.kt  # VPN Service
+│   │       ├── receiver/
+│   │       │   └── BootReceiver.kt      # Auto-start
+│   │       └── ui/theme/
+│   │           └── Theme.kt             # Material Design
+│   └── build.gradle.kts
+│
+├── README.md                 # Этот файл
+├── LICENSE                   # MIT License
+└── TECHNICAL_SPECIFICATION.md # ТЗ
 ```
+
+## 🔧 Технические детали
+
+### Как это работает
+
+#### Windows
+```
+ZapretMod GUI → ZapretEngine → winws.exe (zapret) → WinDivert → Сеть
+                                     ↓
+                              Перехват трафика
+                              DPI обход (fake packets,
+                              fragmentation, TTL manipulation)
+```
+
+#### Android
+```
+ZapretMod UI → ZapretVpnService → Android VpnService → Сеть
+                                      ↓
+                               Перехват трафика
+                               (аналогично flowseal,
+                               но через Android VPN API)
+```
+
+### Сравнение с flowseal/zapret-discord-youtube
+
+| Функция | flowseal | ZapretMod Windows | ZapretMod Android |
+|---------|----------|-------------------|-------------------|
+| GUI | Batch меню | WPF Modern UI | Jetpack Compose |
+| Стратегии | ✅ 15+ | ✅ 15+ | ✅ 8+ |
+| Автозапуск | Service | Service | BootReceiver |
+| Логирование | Console | File + GUI | File + UI |
+| Платформа | Windows | Windows 10/11 | Android 8.0+ |
+
+## ⚙️ Требования
+
+### Windows
+- **ОС**: Windows 10 x64 (версия 1903+) или Windows 11
+- **Фреймворк**: .NET 8 Desktop Runtime
+- **Бинарники**: zapret-win-bundle (winws.exe, WinDivert)
+- **Права**: Администратор (для службы и WinDivert)
+
+### Android
+- **ОС**: Android 8.0+ (API 26+)
+- **Разрешения**: VPN, Foreground Service, Boot
+- **Root**: Не требуется
+
+## 🔍 Диагностика
+
+### Windows
+1. Откройте вкладку **"🔍 Диагностика"**
+2. Проверьте:
+   - Secure DNS (DoH)
+   - Служба Windows
+   - Бинарные файлы (winws.exe)
+   - Права администратора
+   - WinDivert драйвер
+
+### Android
+1. Откройте **Настройки** → **О приложении**
+2. Проверьте версию и статус разрешений
 
 ## ❓ FAQ
 
-### Q: Приложение не запускается
-**A:** Убедитесь, что:
-- Запускаете от имени администратора
-- Установлен .NET 8 Desktop Runtime
-- Windows 10 версии 1903 или новее
-
-### Q: Zapret не работает после запуска
-**A:** Проверьте:
-- Путь к исполняемому файлу zapret в настройках
-- Логи во вкладке "Логи" на наличие ошибок
-- Брандмауэр Windows не блокирует zapret
-
-### Q: После оптимизации пропал интернет
-**A:** Выполните сброс настроек:
-1. Вкладка "Ускорение интернета"
-2. "Сбросить TCP настройки"
-3. "Сбросить DNS"
-4. Перезагрузите компьютер
-5. Или используйте созданную точку восстановления Windows
-
-### Q: Как добавить свой профиль?
+### Q: Не работает Discord/YouTube
 **A:** 
-1. Выберите профиль "Custom"
-2. Настройте все параметры
-3. Используйте "Экспорт настроек" для сохранения
-4. Для загрузки используйте "Импорт настроек"
+1. Попробуйте другую стратегию (FAKE TLS AUTO, SIMPLE FAKE)
+2. Проверьте Secure DNS (Windows) или Private DNS (Android)
+3. Обновите списки доменов в папке `lists/`
 
-### Q: Можно ли использовать без zapret?
-**A:** Да, функции оптимизации сети работают независимо от zapret.
+### Q: Антивирус блокирует WinDivert
+**A:** Добавьте папку с приложением в исключения антивируса
 
-### Q: Где хранятся логи?
-**A:** `%APPDATA%\ZapretGUI\Logs\zapretgui_.log`
+### Q: Android не подключается VPN
+**A:** Предоставьте разрешение при первом запуске
 
-### Q: Как полностью удалить приложение?
+### Q: Как добавить свою стратегию?
 **A:** 
-1. Используйте деинсталлятор в "Программы и компоненты"
-2. Удалите папку `%APPDATA%\ZapretGUI`
-3. Удалите папку установки (по умолчанию `C:\Program Files\ZapretGUI`)
-
-## 🔒 Безопасность
-
-- Все изменения реестра сопровождаются резервными копиями
-- Создаётся точка восстановления системы перед оптимизациями
-- Приложение работает локально, не отправляет данные на внешние серверы
-- Исходный код открыт для аудита
+- **Windows**: Создайте `.bat` файл по аналогии с `general.bat`
+- **Android**: Добавьте стратегию в `ZapretVpnService.kt`
 
 ## 📄 Лицензия
 
-Этот проект распространяется под лицензией **MIT**. См. файл [LICENSE](LICENSE) для деталей.
+MIT License. См. файл [LICENSE](LICENSE).
 
 ## 🤝 Вклад в проект
 
 Приветствуются:
 - Отчёты об ошибках
-- Предложения по улучшению
+- Предложения по стратегиям обхода
 - Pull Request'ы
 - Переводы на другие языки
 
-## 📞 Контакты
-
-- GitHub Issues: [Сообщить об ошибке](https://github.com/zapret-mod-unoficcial/issues)
-- Обсуждения: [GitHub Discussions](https://github.com/zapret-mod-unoficcial/discussions)
-
 ## ⚠️ Отказ от ответственности
 
-Это приложение предназначено для образовательных целей и тестирования сетей. 
+Это приложение предназначено для образовательных целей и тестирования сетей.
 Использование для обхода блокировок может нарушать законодательство вашей страны.
 Авторы не несут ответственности за любые последствия использования данного ПО.
 
+## 📞 Контакты
+
+- **GitHub Issues**: [Сообщить об ошибке](https://github.com/WegVPN/zapret-mod-unoficcial/issues)
+- **Оригинальный проект**: [flowseal/zapret-discord-youtube](https://github.com/flowseal/zapret-discord-youtube)
+- **Zapret**: [bol-van/zapret](https://github.com/bol-van/zapret)
+
 ---
 
-**ZapretGUI** © 2024. Создано с ❤️ для сообщества.
+**ZapretMod** © 2024. Вдохновлено flowseal/zapret-discord-youtube. Создано с ❤️ для сообщества.
