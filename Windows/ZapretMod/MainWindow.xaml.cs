@@ -1,19 +1,17 @@
 using System.IO;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using ZapretMod.Core;
 using Serilog;
-using Hardcodet.Wpf.TaskbarNotification;
 
 namespace ZapretMod;
 
-public class MainWindow : Window
+public partial class MainWindow : Window
 {
     private readonly ZapretEngine _zapretEngine;
-    private TaskbarIcon? _notifyIcon;
-    private bool _isClosing;
+    private bool _isRunning;
 
     public MainWindow()
     {
@@ -23,314 +21,11 @@ public class MainWindow : Window
         _zapretEngine.LogOutput += ZapretEngine_LogOutput;
         _zapretEngine.StateChanged += ZapretEngine_StateChanged;
         
-        InitializeNotifyIcon();
         LoadStrategies();
+        CheckAndDownloadBinaries();
         
         Log.Information("ZapretMod GUI started");
-    }
-
-    #region UI Elements
-
-    private Grid _mainGrid = null!;
-    private StackPanel _headerPanel = null!;
-    private TextBlock _titleText = null!;
-    private TextBlock _statusText = null!;
-    private Button _toggleButton = null!;
-    private ComboBox _strategyCombo = null!;
-    private TextBlock _strategyDesc = null!;
-    private CheckBox _gameFilterCheck = null!;
-    private CheckBox _autoStartCheck = null!;
-    private TextBox _logBox = null!;
-    private Button _clearLogBtn = null!;
-    private Button _saveLogBtn = null!;
-    private Button _settingsBtn = null!;
-    private Button _diagnosticsBtn = null!;
-
-    private void InitializeComponent()
-    {
-        // Window settings
-        Title = "ZapretMod - DPI Bypass for Discord, YouTube, Telegram";
-        Width = 900;
-        Height = 650;
-        MinWidth = 800;
-        MinHeight = 600;
-        WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        
-        // Modern dark theme colors
-        var bgColor = new SolidColorBrush(Color.FromRgb(32, 32, 32));
-        var panelColor = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-        var accentColor = new SolidColorBrush(Color.FromRgb(0, 120, 215));
-        var textColor = new SolidColorBrush(Colors.White);
-        var successColor = new SolidColorBrush(Color.FromRgb(76, 209, 55));
-        var errorColor = new SolidColorBrush(Color.FromRgb(255, 59, 48));
-
-        // Main grid
-        _mainGrid = new Grid
-        {
-            Background = bgColor
-        };
-
-        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Header
-        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Strategy
-        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Options
-        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Logs
-        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Footer
-
-        // Header
-        _headerPanel = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Margin = new Thickness(20, 15, 20, 15),
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
-
-        _titleText = new TextBlock
-        {
-            Text = "🛡 ZapretMod",
-            FontSize = 28,
-            FontWeight = FontWeights.Bold,
-            Foreground = accentColor,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        _statusText = new TextBlock
-        {
-            Text = "● Остановлено",
-            FontSize = 16,
-            Margin = new Thickness(30, 0, 0, 0),
-            Foreground = errorColor,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        _headerPanel.Children.Add(_titleText);
-        _headerPanel.Children.Add(_statusText);
-        Grid.SetRow(_headerPanel, 0);
-        _mainGrid.Children.Add(_headerPanel);
-
-        // Strategy panel
-        var strategyPanel = new StackPanel
-        {
-            Margin = new Thickness(20, 0, 20, 15)
-        };
-
-        var strategyLabel = new TextBlock
-        {
-            Text = "Стратегия обхода",
-            FontSize = 14,
-            Foreground = textColor,
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-
-        _strategyCombo = new ComboBox
-        {
-            Width = 400,
-            HorizontalAlignment = HorizontalAlignment.Left,
-            FontSize = 14,
-            Background = panelColor,
-            Foreground = textColor
-        };
-        _strategyCombo.SelectionChanged += StrategyCombo_SelectionChanged;
-
-        _strategyDesc = new TextBlock
-        {
-            FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
-            Margin = new Thickness(0, 8, 0, 0),
-            TextWrapping = TextWrapping.Wrap,
-            Width = 500
-        };
-
-        strategyPanel.Children.Add(strategyLabel);
-        strategyPanel.Children.Add(_strategyCombo);
-        strategyPanel.Children.Add(_strategyDesc);
-        Grid.SetRow(strategyPanel, 1);
-        _mainGrid.Children.Add(strategyPanel);
-
-        // Options panel
-        var optionsPanel = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Margin = new Thickness(20, 0, 20, 15)
-        };
-
-        _gameFilterCheck = new CheckBox
-        {
-            Content = "🎮 Game Filter (UDP >1023)",
-            Foreground = textColor,
-            Margin = new Thickness(0, 0, 20, 0),
-            FontSize = 13
-        };
-
-        _autoStartCheck = new CheckBox
-        {
-            Content = "🚀 Автозапуск с Windows",
-            Foreground = textColor,
-            FontSize = 13
-        };
-        _autoStartCheck.Checked += AutoStartCheck_Checked;
-        _autoStartCheck.Unchecked += AutoStartCheck_Unchecked;
-
-        _toggleButton = new Button
-        {
-            Content = "▶ Запустить",
-            Width = 140,
-            Height = 36,
-            Margin = new Thickness(50, 0, 0, 0),
-            Background = accentColor,
-            Foreground = textColor,
-            FontSize = 14,
-            FontWeight = FontWeights.SemiBold,
-            BorderThickness = new Thickness(0)
-        };
-        _toggleButton.Click += ToggleButton_Click;
-
-        _settingsBtn = new Button
-        {
-            Content = "⚙ Настройки",
-            Width = 120,
-            Height = 36,
-            Margin = new Thickness(20, 0, 0, 0),
-            Background = panelColor,
-            Foreground = textColor,
-            FontSize = 13,
-            BorderThickness = new Thickness(0)
-        };
-        _settingsBtn.Click += SettingsBtn_Click;
-
-        _diagnosticsBtn = new Button
-        {
-            Content = "🔍 Диагностика",
-            Width = 120,
-            Height = 36,
-            Margin = new Thickness(10, 0, 0, 0),
-            Background = panelColor,
-            Foreground = textColor,
-            FontSize = 13,
-            BorderThickness = new Thickness(0)
-        };
-        _diagnosticsBtn.Click += DiagnosticsBtn_Click;
-
-        optionsPanel.Children.Add(_gameFilterCheck);
-        optionsPanel.Children.Add(_autoStartCheck);
-        optionsPanel.Children.Add(_toggleButton);
-        optionsPanel.Children.Add(_settingsBtn);
-        optionsPanel.Children.Add(_diagnosticsBtn);
-        Grid.SetRow(optionsPanel, 2);
-        _mainGrid.Children.Add(optionsPanel);
-
-        // Log box
-        var logBorder = new Border
-        {
-            Background = new SolidColorBrush(Color.FromRgb(25, 25, 25)),
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(10),
-            Margin = new Thickness(20, 0, 20, 10)
-        };
-
-        var logHeader = new TextBlock
-        {
-            Text = "📋 Логи",
-            FontSize = 13,
-            Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-
-        _logBox = new TextBox
-        {
-            IsReadOnly = true,
-            IsReadOnlyCaretVisible = true,
-            FontFamily = new FontFamily("Consolas"),
-            FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            TextWrapping = TextWrapping.Wrap,
-            AcceptsReturn = true
-        };
-
-        var logStack = new StackPanel();
-        logStack.Children.Add(logHeader);
-        logStack.Children.Add(_logBox);
-        logBorder.Child = logStack;
-
-        Grid.SetRow(logBorder, 3);
-        _mainGrid.Children.Add(logBorder);
-
-        // Footer buttons
-        var footerPanel = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 0, 20, 15)
-        };
-
-        _clearLogBtn = new Button
-        {
-            Content = "🗑 Очистить лог",
-            Width = 110,
-            Height = 32,
-            Background = panelColor,
-            Foreground = textColor,
-            FontSize = 12,
-            BorderThickness = new Thickness(0)
-        };
-        _clearLogBtn.Click += ClearLogBtn_Click;
-
-        _saveLogBtn = new Button
-        {
-            Content = "💾 Сохранить лог",
-            Width = 110,
-            Height = 32,
-            Margin = new Thickness(10, 0, 0, 0),
-            Background = panelColor,
-            Foreground = textColor,
-            FontSize = 12,
-            BorderThickness = new Thickness(0)
-        };
-        _saveLogBtn.Click += SaveLogBtn_Click;
-
-        footerPanel.Children.Add(_clearLogBtn);
-        footerPanel.Children.Add(_saveLogBtn);
-        Grid.SetRow(footerPanel, 4);
-        _mainGrid.Children.Add(footerPanel);
-
-        Content = _mainGrid;
-
-        // Handle minimize to tray
-        StateChanged += MainWindow_StateChanged;
-        Closing += MainWindow_Closing;
-    }
-
-    #endregion
-
-    #region Event Handlers
-
-    private void InitializeNotifyIcon()
-    {
-        _notifyIcon = new TaskbarIcon
-        {
-            Icon = System.Drawing.SystemIcons.Application,
-            ToolTipText = "ZapretMod"
-        };
-
-        var contextMenu = new ContextMenu();
-        
-        var toggleItem = new MenuItem { Header = "Запустить/Остановить" };
-        toggleItem.Click += (s, e) => ToggleFromTray();
-        
-        var showItem = new MenuItem { Header = "Показать окно" };
-        showItem.Click += (s, e) => ShowWindow();
-        
-        var exitItem = new MenuItem { Header = "Выход" };
-        exitItem.Click += (s, e) => CloseApplication();
-
-        contextMenu.Items.Add(toggleItem);
-        contextMenu.Items.Add(showItem);
-        contextMenu.Items.Add(exitItem);
-        
-        _notifyIcon.ContextMenu = contextMenu;
-        _notifyIcon.TrayMouseDoubleClick += (s, e) => ShowWindow();
+        AppendLog("=== ZapretMod запущен ===", LogType.Info);
     }
 
     private void LoadStrategies()
@@ -338,30 +33,114 @@ public class MainWindow : Window
         var strategies = ZapretEngine.GetBuiltInStrategies();
         foreach (var strategy in strategies)
         {
-            _strategyCombo.Items.Add(strategy);
+            StrategyCombo.Items.Add(strategy);
         }
-        _strategyCombo.SelectedIndex = 0;
+        StrategyCombo.SelectedIndex = 0;
+        StrategyCombo.SelectionChanged += StrategyCombo_SelectionChanged;
+        UpdateStrategyDescription();
+        
+        // Event handlers
+        ClearLogBtn.Click += (s, e) => LogBox.Clear();
+        SaveLogBtn.Click += SaveLogBtn_Click;
+        SettingsBtn.Click += (s, e) => new SettingsWindow().ShowDialog();
+        DiagnosticsBtn.Click += (s, e) => new DiagnosticsWindow().ShowDialog();
+        ServiceBtn.Click += (s, e) => System.Diagnostics.Process.Start("service.bat");
+        
+        AutoStartCheck.Checked += (s, e) => {
+            try { ServiceManager.InstallService(); AppendLog("✓ Автозапуск включен", LogType.Info); }
+            catch (Exception ex) { AppendLog($"✗ Ошибка: {ex.Message}", LogType.Error); }
+        };
+        AutoStartCheck.Unchecked += (s, e) => {
+            try { ServiceManager.RemoveService(); AppendLog("✗ Автозапуск выключен", LogType.Warning); }
+            catch (Exception ex) { AppendLog($"✗ Ошибка: {ex.Message}", LogType.Error); }
+        };
     }
 
-    private void StrategyCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void CheckAndDownloadBinaries()
     {
-        if (_strategyCombo.SelectedItem is StrategyConfig config)
+        var binPath = Path.Combine(AppContext.BaseDirectory, "bin");
+        var winwsPath = Path.Combine(binPath, "winws.exe");
+        
+        if (!File.Exists(winwsPath))
         {
-            _strategyDesc.Text = config.Description;
+            AppendLog("⚠ winws.exe не найден. Скачивание...", LogType.Warning);
+            
+            try
+            {
+                Directory.CreateDirectory(binPath);
+                
+                using var client = new HttpClient();
+                var releases = new[]
+                {
+                    "https://github.com/bol-van/zapret-win-bundle/releases/latest/download/winws.exe",
+                    "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/master/WinDivert64.sys",
+                    "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/master/WinDivert64.dll"
+                };
+                
+                foreach (var url in releases)
+                {
+                    var fileName = Path.GetFileName(url);
+                    var destPath = Path.Combine(binPath, fileName);
+                    
+                    try
+                    {
+                        var data = await client.GetByteArrayAsync(url);
+                        await File.WriteAllBytesAsync(destPath, data);
+                        AppendLog($"✓ Скачан {fileName}", LogType.Info);
+                    }
+                    catch
+                    {
+                        AppendLog($"⚠ Не удалось скачать {fileName}", LogType.Warning);
+                    }
+                }
+                
+                AppendLog("Скачивание завершено. Перезапустите приложение.", LogType.Info);
+                MessageBox.Show(
+                    "Бинарные файлы скачаны в папку bin\\\n\nТеперь закройте приложение и запустите снова.\n\nЕсли скачивание не удалось - скачайте вручную с:\nhttps://github.com/bol-van/zapret-win-bundle/releases",
+                    "ZapretMod",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"✗ Ошибка скачивания: {ex.Message}", LogType.Error);
+                MessageBox.Show(
+                    $"Не удалось скачать файлы автоматически.\n\nСкачайте вручную:\n1. https://github.com/bol-van/zapret-win-bundle/releases\n2. Распакуйте в папку bin\\\n\nОшибка: {ex.Message}",
+                    "ZapretMod",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
+        else
+        {
+            AppendLog("✓ winws.exe найден", LogType.Info);
+        }
+    }
+
+    private void UpdateStrategyDescription()
+    {
+        if (StrategyCombo.SelectedItem is StrategyConfig config)
+        {
+            StrategyDescription.Text = config.Description;
+        }
+    }
+
+    private void StrategyCombo_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        UpdateStrategyDescription();
     }
 
     private void ToggleButton_Click(object? sender, RoutedEventArgs e)
     {
         try
         {
-            if (_zapretEngine.IsRunning)
+            if (_isRunning)
             {
                 _zapretEngine.Stop();
             }
             else
             {
-                if (_strategyCombo.SelectedItem is StrategyConfig config)
+                if (StrategyCombo.SelectedItem is StrategyConfig config)
                 {
                     _zapretEngine.Start(config);
                 }
@@ -371,6 +150,7 @@ public class MainWindow : Window
         {
             MessageBox.Show($"Ошибка: {ex.Message}", "ZapretMod", 
                 MessageBoxButton.OK, MessageBoxImage.Error);
+            AppendLog($"✗ Ошибка: {ex.Message}", LogType.Error);
         }
     }
 
@@ -378,21 +158,23 @@ public class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
+            _isRunning = e.IsRunning;
+            
             if (e.IsRunning)
             {
-                _statusText.Text = "● Работает";
-                _statusText.Foreground = new SolidColorBrush(Color.FromRgb(76, 209, 55));
-                _toggleButton.Content = "⏹ Остановить";
-                _toggleButton.Background = new SolidColorBrush(Color.FromRgb(255, 59, 48));
+                StatusText.Text = "Работает";
+                StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(76, 209, 55));
+                ToggleButton.Content = "⏹ ОСТАНОВИТЬ";
+                ToggleButton.Background = new SolidColorBrush(Color.FromRgb(255, 59, 48));
                 AppendLog($"✓ Стратегия '{e.StrategyName}' запущена", LogType.Info);
             }
             else
             {
-                _statusText.Text = "● Остановлено";
-                _statusText.Foreground = new SolidColorBrush(Color.FromRgb(255, 59, 48));
-                _toggleButton.Content = "▶ Запустить";
-                _toggleButton.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
-                AppendLog($"✗ Остановлено", LogType.Warning);
+                StatusText.Text = "Остановлено";
+                StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(255, 59, 48));
+                ToggleButton.Content = "▶ ЗАПУСТИТЬ";
+                ToggleButton.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+                AppendLog("✗ Остановлено", LogType.Warning);
             }
         });
     }
@@ -408,13 +190,16 @@ public class MainWindow : Window
 
     private void AppendLog(string message, LogType type)
     {
-        _logBox.AppendText(message + "\n");
-        _logBox.ScrollToEnd();
-    }
-
-    private void ClearLogBtn_Click(object? sender, RoutedEventArgs e)
-    {
-        _logBox.Clear();
+        var color = type switch
+        {
+            LogType.Error => "#FF3B30",
+            LogType.Warning => "#FFA500",
+            LogType.Info => "#00FF00",
+            _ => "#AAAAAA"
+        };
+        
+        LogBox.AppendText($"\n{message}");
+        LogBox.ScrollToEnd();
     }
 
     private void SaveLogBtn_Click(object? sender, RoutedEventArgs e)
@@ -427,79 +212,33 @@ public class MainWindow : Window
 
         if (dialog.ShowDialog() == true)
         {
-            File.WriteAllText(dialog.FileName, _logBox.Text);
+            File.WriteAllText(dialog.FileName, LogBox.Text);
+            AppendLog($"✓ Лог сохранён: {dialog.FileName}", LogType.Info);
         }
     }
 
-    private void SettingsBtn_Click(object? sender, RoutedEventArgs e)
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        var settingsWindow = new SettingsWindow();
-        settingsWindow.Owner = this;
-        settingsWindow.ShowDialog();
-    }
-
-    private void DiagnosticsBtn_Click(object? sender, RoutedEventArgs e)
-    {
-        var diagnosticsWindow = new DiagnosticsWindow();
-        diagnosticsWindow.Owner = this;
-        diagnosticsWindow.ShowDialog();
-    }
-
-    private void AutoStartCheck_Checked(object? sender, RoutedEventArgs e)
-    {
-        ServiceManager.InstallService();
-        AppendLog("✓ Автозапуск включен", LogType.Info);
-    }
-
-    private void AutoStartCheck_Unchecked(object? sender, RoutedEventArgs e)
-    {
-        ServiceManager.RemoveService();
-        AppendLog("✗ Автозапуск выключен", LogType.Warning);
-    }
-
-    private void MainWindow_StateChanged(object? sender, EventArgs e)
-    {
-        if (WindowState == WindowState.Minimized)
+        if (_isRunning)
         {
-            Hide();
+            var result = MessageBox.Show(
+                "Zapret работает. Остановить и выйти?",
+                "ZapretMod",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                _zapretEngine.Stop();
+            }
+            else
+            {
+                e.Cancel = true;
+                return;
+            }
         }
+        
+        _zapretEngine.Dispose();
+        base.OnClosing(e);
     }
-
-    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
-    {
-        if (!_isClosing)
-        {
-            e.Cancel = true;
-            Hide();
-        }
-        else
-        {
-            _zapretEngine.Dispose();
-            _notifyIcon?.Dispose();
-        }
-    }
-
-    private void ToggleFromTray()
-    {
-        if (_zapretEngine.IsRunning)
-            _zapretEngine.Stop();
-        else if (_strategyCombo.SelectedItem is StrategyConfig config)
-            _zapretEngine.Start(config);
-    }
-
-    private void ShowWindow()
-    {
-        Show();
-        WindowState = WindowState.Normal;
-        Activate();
-    }
-
-    private void CloseApplication()
-    {
-        _isClosing = true;
-        _zapretEngine.Stop();
-        Close();
-    }
-
-    #endregion
 }

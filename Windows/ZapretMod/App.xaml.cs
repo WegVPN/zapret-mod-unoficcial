@@ -10,7 +10,6 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Configure logging
         var logPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "ZapretMod",
@@ -28,12 +27,6 @@ public partial class App : Application
             .CreateLogger();
 
         Log.Information("=== ZapretMod Starting ===");
-        Log.Information("Version: {Version}", typeof(App).Assembly.GetName().Version);
-
-        var mainWindow = new MainWindow();
-        mainWindow.Show();
-        
-        this.MainWindow = mainWindow;
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -42,6 +35,4 @@ public partial class App : Application
         Log.CloseAndFlush();
         base.OnExit(e);
     }
-    
-    public new MainWindow MainWindow { get; private set; } = null!;
 }

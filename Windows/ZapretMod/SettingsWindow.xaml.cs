@@ -5,156 +5,140 @@ using ZapretMod.Core;
 
 namespace ZapretMod;
 
-public partial class SettingsWindow : Window
+public class SettingsWindow : Window
 {
     public SettingsWindow()
     {
-        InitializeComponent();
-    }
-
-    private void InitializeComponent()
-    {
         Title = "Настройки - ZapretMod";
         Width = 600;
-        Height = 500;
+        Height = 550;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ResizeMode = ResizeMode.NoResize;
+        Background = (Brush)new BrushConverter().ConvertFrom("#1C1C1C");
 
-        var bgColor = new SolidColorBrush(Color.FromRgb(32, 32, 32));
-        var panelColor = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-        var accentColor = new SolidColorBrush(Color.FromRgb(0, 120, 215));
-        var textColor = new SolidColorBrush(Colors.White);
-
-        var mainGrid = new Grid { Background = bgColor, Margin = new Thickness(20) };
-
-        var rows = new[] {
-            new RowDefinition { Height = GridLength.Auto },
-            new RowDefinition { Height = GridLength.Auto },
-            new RowDefinition { Height = GridLength.Auto },
-            new RowDefinition { Height = new GridLength(1, GridUnitType.Star) },
-            new RowDefinition { Height = GridLength.Auto }
-        };
-
-        foreach (var row in rows)
-            mainGrid.RowDefinitions.Add(row);
+        var mainGrid = new Grid { Margin = new Thickness(25) };
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         // Title
         var title = new TextBlock
         {
             Text = "⚙ Настройки",
-            FontSize = 20,
+            FontSize = 22,
             FontWeight = FontWeights.Bold,
-            Foreground = accentColor,
-            Margin = new Thickness(0, 0, 0, 20)
+            Foreground = Brushes.White,
+            Margin = new Thickness(0, 0, 0, 25)
         };
         Grid.SetRow(title, 0);
         mainGrid.Children.Add(title);
 
-        // Zapret path
-        var pathPanel = CreateSettingRow(
-            "Путь к winws.exe:",
-            "Укажите расположение winws.exe из zapret-win-bundle",
-            1);
-        Grid.SetRow(pathPanel, 1);
-        mainGrid.Children.Add(pathPanel);
+        // Content
+        var scrollViewer = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var contentPanel = new StackPanel();
 
-        // Binaries check
-        var binPanel = CreateSettingRow(
-            "Бинарные файлы:",
-            "Проверка наличия winws.exe и WinDivert",
-            2);
-        
-        var checkBtn = new Button
-        {
-            Content = "Проверить",
-            Width = 100,
-            Height = 28,
-            Background = accentColor,
-            Foreground = textColor,
-            HorizontalAlignment = HorizontalAlignment.Right
-        };
-        checkBtn.Click += (s, e) =>
-        {
-            var engine = new ZapretEngine();
-            if (engine.CheckBinaries())
-                MessageBox.Show("✓ Все файлы найдены", "Проверка", MessageBoxButton.OK, MessageBoxImage.Information);
-            else
-                MessageBox.Show("✗ Файлы не найдены. Скачайте zapret-win-bundle.", "Проверка", MessageBoxButton.OK, MessageBoxImage.Warning);
-        };
-        ((StackPanel)((Border)binPanel).Child).Children.Add(checkBtn);
-        Grid.SetRow(binPanel, 2);
-        mainGrid.Children.Add(binPanel);
+        // Binaries section
+        contentPanel.Children.Add(CreateSection(
+            "📁 Бинарные файлы",
+            "winws.exe и WinDivert должны находиться в папке bin\\",
+            () =>
+            {
+                var engine = new ZapretEngine();
+                if (engine.CheckBinaries())
+                    MessageBox.Show("✓ Все файлы найдены в папке bin\\", "Проверка", MessageBoxButton.OK, MessageBoxImage.Information);
+                else
+                    MessageBox.Show("✗ Файлы не найдены.\n\nСкачайте с:\nhttps://github.com/bol-van/zapret-win-bundle/releases", "Проверка", MessageBoxButton.OK, MessageBoxImage.Warning);
+            },
+            "Проверить"));
 
-        // About
-        var aboutPanel = new StackPanel { Margin = new Thickness(0, 20, 0, 0) };
-        aboutPanel.Children.Add(new TextBlock
-        {
-            Text = "О программе",
-            FontSize = 16,
-            FontWeight = FontWeights.SemiBold,
-            Foreground = textColor,
-            Margin = new Thickness(0, 0, 0, 10)
-        });
-        aboutPanel.Children.Add(new TextBlock
-        {
-            Text = "ZapretMod v2.0.0\n" +
-                   "Графическая оболочка для zapret (winws.exe)\n" +
-                   "Вдохновлено flowseal/zapret-discord-youtube\n\n" +
-                   "Требуется: .NET 8 Desktop Runtime, Windows 10/11 x64",
-            Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
-            FontSize = 13,
-            LineHeight = 4
-        });
-        Grid.SetRow(aboutPanel, 3);
-        mainGrid.Children.Add(aboutPanel);
+        // Zapret source
+        contentPanel.Children.Add(CreateSection(
+            "📦 Источник zapret",
+            "Используется zapret-win-bundle от bol-van",
+            () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://github.com/bol-van/zapret-win-bundle",
+                UseShellExecute = true
+            }),
+            "Открыть GitHub"));
+
+        // About section
+        contentPanel.Children.Add(CreateSection(
+            "ℹ О программе",
+            "ZapretMod v2.0.0\n" +
+            "Графическая оболочка для zapret (winws.exe)\n\n" +
+            "Вдохновлено flowseal/zapret-discord-youtube\n" +
+            "Требуется: Windows 10/11 x64, .NET 8",
+            null,
+            null));
+
+        scrollViewer.Content = contentPanel;
+        Grid.SetRow(scrollViewer, 1);
+        mainGrid.Children.Add(scrollViewer);
 
         // Close button
         var closeBtn = new Button
         {
             Content = "Закрыть",
-            Width = 100,
-            Height = 32,
-            Background = accentColor,
-            Foreground = textColor,
+            Width = 120,
+            Height = 36,
+            Background = (Brush)new BrushConverter().ConvertFrom("#0078D4"),
+            Foreground = Brushes.White,
             HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 20, 0, 0)
+            Margin = new Thickness(0, 25, 0, 0)
         };
         closeBtn.Click += (s, e) => Close();
-        Grid.SetRow(closeBtn, 4);
+        Grid.SetRow(closeBtn, 2);
         mainGrid.Children.Add(closeBtn);
 
         Content = mainGrid;
     }
 
-    private Border CreateSettingRow(string title, string description, int row)
+    private Border CreateSection(string title, string description, System.Action? buttonAction, string? buttonText)
     {
-        var panel = new StackPanel { Margin = new Thickness(0, 10, 0, 10) };
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 15) };
         
         panel.Children.Add(new TextBlock
         {
             Text = title,
-            FontSize = 14,
+            FontSize = 15,
             FontWeight = FontWeights.SemiBold,
-            Foreground = Brushes.White
+            Foreground = Brushes.White,
+            Margin = new Thickness(0, 0, 0, 8)
         });
         
         panel.Children.Add(new TextBlock
         {
             Text = description,
-            FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
-            Margin = new Thickness(0, 5, 0, 10)
+            FontSize = 13,
+            Foreground = (Brush)new BrushConverter().ConvertFrom("#AAAAAA"),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 12)
         });
+
+        if (buttonAction != null && !string.IsNullOrEmpty(buttonText))
+        {
+            var btn = new Button
+            {
+                Content = buttonText,
+                Width = 140,
+                Height = 34,
+                Background = (Brush)new BrushConverter().ConvertFrom("#2D2D2D"),
+                Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            btn.Click += (s, e) => buttonAction();
+            panel.Children.Add(btn);
+        }
 
         var border = new Border
         {
             Child = panel,
-            Padding = new Thickness(10),
-            Background = new SolidColorBrush(Color.FromRgb(45, 45, 45)),
-            CornerRadius = new CornerRadius(6)
+            Padding = new Thickness(18),
+            Background = (Brush)new BrushConverter().ConvertFrom("#2D2D2D"),
+            CornerRadius = new CornerRadius(10)
         };
 
-        Grid.SetRow(border, row);
         return border;
     }
 }

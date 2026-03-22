@@ -7,117 +7,94 @@ using ZapretMod.Core;
 
 namespace ZapretMod;
 
-public partial class DiagnosticsWindow : Window
+public class DiagnosticsWindow : Window
 {
     public DiagnosticsWindow()
     {
-        InitializeComponent();
-    }
-
-    private void InitializeComponent()
-    {
         Title = "Диагностика - ZapretMod";
         Width = 700;
-        Height = 550;
+        Height = 600;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Background = (Brush)new BrushConverter().ConvertFrom("#1C1C1C");
 
-        var bgColor = new SolidColorBrush(Color.FromRgb(32, 32, 32));
-        var panelColor = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-        var accentColor = new SolidColorBrush(Color.FromRgb(0, 120, 215));
-        var textColor = new SolidColorBrush(Colors.White);
-        var successColor = new SolidColorBrush(Color.FromRgb(76, 209, 55));
-        var errorColor = new SolidColorBrush(Color.FromRgb(255, 59, 48));
-
-        var mainGrid = new Grid { Background = bgColor, Margin = new Thickness(20) };
-
-        var rows = new[] {
-            new RowDefinition { Height = GridLength.Auto },
-            new RowDefinition { Height = new GridLength(1, GridUnitType.Star) },
-            new RowDefinition { Height = GridLength.Auto }
-        };
-
-        foreach (var row in rows)
-            mainGrid.RowDefinitions.Add(row);
+        var mainGrid = new Grid { Margin = new Thickness(25) };
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         // Title
         var title = new TextBlock
         {
             Text = "🔍 Диагностика",
-            FontSize = 20,
+            FontSize = 22,
             FontWeight = FontWeights.Bold,
-            Foreground = accentColor,
-            Margin = new Thickness(0, 0, 0, 15)
+            Foreground = Brushes.White,
+            Margin = new Thickness(0, 0, 0, 20)
         };
         Grid.SetRow(title, 0);
         mainGrid.Children.Add(title);
 
-        // Diagnostics panel
-        var scrollViewer = new ScrollViewer
-        {
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-        };
-
+        // Diagnostics list
+        var scrollViewer = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         var diagnosticsPanel = new StackPanel();
 
-        // Check 1: Secure DNS
-        diagnosticsPanel.Children.Add(CreateDiagnosticItem(
-            "Secure DNS (DoH)",
-            "Требуется для работы некоторых стратегий",
-            ServiceManager.IsSecureDnsEnabled(),
-            "Включить",
-            () => ServiceManager.EnableSecureDns()));
-
-        // Check 2: Service installed
-        diagnosticsPanel.Children.Add(CreateDiagnosticItem(
-            "Служба Windows",
-            "Автозапуск zapret при старте системы",
-            ServiceManager.IsServiceInstalled(),
-            ServiceManager.IsServiceInstalled() ? "Удалить" : "Установить",
-            () =>
-            {
-                if (ServiceManager.IsServiceInstalled())
-                    ServiceManager.RemoveService();
-                else
-                    ServiceManager.InstallService();
-            }));
-
-        // Check 3: Binaries
+        // Check 1: Binaries
         var engine = new ZapretEngine();
-        var binariesOk = engine.CheckBinaries();
+        var binariesOk = CheckBinariesDetailed(out var binariesMsg);
         diagnosticsPanel.Children.Add(CreateDiagnosticItem(
-            "Бинарные файлы (winws.exe)",
-            "Файлы из zapret-win-bundle",
+            "📁 Бинарные файлы",
+            binariesMsg,
             binariesOk,
             "Скачать",
-            () =>
+            () => Process.Start(new ProcessStartInfo
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "https://github.com/bol-van/zapret-win-bundle/releases",
-                    UseShellExecute = true
-                });
-            }));
+                FileName = "https://github.com/bol-van/zapret-win-bundle/releases",
+                UseShellExecute = true
+            })));
 
-        // Check 4: Admin rights
+        // Check 2: Admin rights
         var isAdmin = new System.Security.Principal.WindowsPrincipal(
             System.Security.Principal.WindowsIdentity.GetCurrent())
             .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
         diagnosticsPanel.Children.Add(CreateDiagnosticItem(
-            "Права администратора",
-            "Требуются для установки службы и изменения сети",
+            "🔐 Права администратора",
+            isAdmin ? "Приложение запущено от имени администратора" : "Требуется запуск от администратора",
             isAdmin,
-            null,
-            null));
+            null, null));
 
-        // Check 5: WinDivert driver
+        // Check 3: Service
+        var serviceInstalled = ServiceManager.IsServiceInstalled();
+        diagnosticsPanel.Children.Add(CreateDiagnosticItem(
+            "🔧 Служба Windows",
+            serviceInstalled ? "Служба ZapretMod установлена" : "Служба не установлена",
+            serviceInstalled,
+            serviceInstalled ? "Удалить" : "Установить",
+            () =>
+            {
+                if (serviceInstalled)
+                    ServiceManager.RemoveService();
+                else
+                    ServiceManager.InstallService();
+                RefreshDiagnostics();
+            }));
+
+        // Check 4: Secure DNS
+        var dnsOk = ServiceManager.IsSecureDnsEnabled();
+        diagnosticsPanel.Children.Add(CreateDiagnosticItem(
+            "🌐 Secure DNS (DoH)",
+            dnsOk ? "Secure DNS включён" : "Рекомендуется включить Secure DNS",
+            dnsOk,
+            dnsOk ? null : "Включить",
+            dnsOk ? null : () => ServiceManager.EnableSecureDns()));
+
+        // Check 5: WinDivert
         var windivertPath = Path.Combine(AppContext.BaseDirectory, "bin", "WinDivert64.sys");
         var windivertExists = File.Exists(windivertPath);
         diagnosticsPanel.Children.Add(CreateDiagnosticItem(
-            "WinDivert драйвер",
-            "Необходим для перехвата трафика",
+            "🔌 WinDivert драйвер",
+            windivertExists ? "Драйвер найден" : "Драйвер не найден (скачается автоматически)",
             windivertExists,
-            null,
-            null));
+            null, null));
 
         scrollViewer.Content = diagnosticsPanel;
         Grid.SetRow(scrollViewer, 1);
@@ -133,26 +110,21 @@ public partial class DiagnosticsWindow : Window
         var refreshBtn = new Button
         {
             Content = "🔄 Обновить",
-            Width = 100,
-            Height = 32,
-            Background = panelColor,
-            Foreground = textColor,
+            Width = 110,
+            Height = 36,
+            Background = (Brush)new BrushConverter().ConvertFrom("#2D2D2D"),
+            Foreground = Brushes.White,
             Margin = new Thickness(0, 0, 10, 0)
         };
-        refreshBtn.Click += (s, e) =>
-        {
-            // Refresh diagnostics
-            Close();
-            new DiagnosticsWindow().ShowDialog();
-        };
+        refreshBtn.Click += (s, e) => RefreshDiagnostics();
 
         var closeBtn = new Button
         {
             Content = "Закрыть",
-            Width = 100,
-            Height = 32,
-            Background = accentColor,
-            Foreground = textColor
+            Width = 110,
+            Height = 36,
+            Background = (Brush)new BrushConverter().ConvertFrom("#0078D4"),
+            Foreground = Brushes.White
         };
         closeBtn.Click += (s, e) => Close();
 
@@ -164,10 +136,40 @@ public partial class DiagnosticsWindow : Window
         Content = mainGrid;
     }
 
+    private bool CheckBinariesDetailed(out string message)
+    {
+        var binPath = Path.Combine(AppContext.BaseDirectory, "bin");
+        var winws = Path.Combine(binPath, "winws.exe");
+        var windivertSys = Path.Combine(binPath, "WinDivert64.sys");
+        var windivertDll = Path.Combine(binPath, "WinDivert64.dll");
+
+        var missing = new List<string>();
+        if (!File.Exists(winws)) missing.Add("winws.exe");
+        if (!File.Exists(windivertSys)) missing.Add("WinDivert64.sys");
+        if (!File.Exists(windivertDll)) missing.Add("WinDivert64.dll");
+
+        if (missing.Count == 0)
+        {
+            message = "Все файлы найдены в папке bin\\";
+            return true;
+        }
+        else
+        {
+            message = $"Отсутствуют: {string.Join(", ", missing)}";
+            return false;
+        }
+    }
+
+    private void RefreshDiagnostics()
+    {
+        Close();
+        new DiagnosticsWindow().ShowDialog();
+    }
+
     private Border CreateDiagnosticItem(string title, string description, bool isOk, 
         string? buttonText, Action? buttonAction)
     {
-        var panel = new StackPanel { Margin = new Thickness(0, 10, 0, 10) };
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
 
         var headerPanel = new StackPanel
         {
@@ -177,17 +179,18 @@ public partial class DiagnosticsWindow : Window
         headerPanel.Children.Add(new TextBlock
         {
             Text = isOk ? "✓" : "✗",
-            FontSize = 18,
-            Foreground = isOk ? new SolidColorBrush(Color.FromRgb(76, 209, 55)) 
-                              : new SolidColorBrush(Color.FromRgb(255, 59, 48)),
-            Margin = new Thickness(0, 0, 10, 0),
-            VerticalAlignment = VerticalAlignment.Center
+            FontSize = 20,
+            Foreground = isOk ? (Brush)new BrushConverter().ConvertFrom("#4CD037") 
+                              : (Brush)new BrushConverter().ConvertFrom("#FF3B30"),
+            Margin = new Thickness(0, 0, 12, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            FontWeight = FontWeights.Bold
         });
 
         headerPanel.Children.Add(new TextBlock
         {
             Text = title,
-            FontSize = 14,
+            FontSize = 15,
             FontWeight = FontWeights.SemiBold,
             Foreground = Brushes.White,
             VerticalAlignment = VerticalAlignment.Center
@@ -198,10 +201,10 @@ public partial class DiagnosticsWindow : Window
             var btn = new Button
             {
                 Content = buttonText,
-                Width = 90,
-                Height = 28,
+                Width = 110,
+                Height = 32,
                 Margin = new Thickness(20, 0, 0, 0),
-                Background = new SolidColorBrush(Color.FromRgb(0, 120, 215)),
+                Background = (Brush)new BrushConverter().ConvertFrom("#0078D4"),
                 Foreground = Brushes.White
             };
             btn.Click += (s, e) =>
@@ -225,18 +228,19 @@ public partial class DiagnosticsWindow : Window
         panel.Children.Add(new TextBlock
         {
             Text = description,
-            FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
-            Margin = new Thickness(28, 5, 0, 0)
+            FontSize = 13,
+            Foreground = (Brush)new BrushConverter().ConvertFrom("#AAAAAA"),
+            Margin = new Thickness(32, 6, 0, 0),
+            TextWrapping = TextWrapping.Wrap
         });
 
         var border = new Border
         {
             Child = panel,
-            Padding = new Thickness(15, 10, 15, 10),
-            Background = new SolidColorBrush(Color.FromRgb(45, 45, 45)),
-            CornerRadius = new CornerRadius(6),
-            Margin = new Thickness(0, 5, 0, 5)
+            Padding = new Thickness(18, 14, 18, 14),
+            Background = (Brush)new BrushConverter().ConvertFrom("#2D2D2D"),
+            CornerRadius = new CornerRadius(10),
+            Margin = new Thickness(0, 6, 0, 6)
         };
 
         return border;
