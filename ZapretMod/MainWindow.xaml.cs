@@ -65,7 +65,7 @@ public partial class MainWindow : Window {
         StatusDot.Fill = new SolidColorBrush(running ? Color.FromRgb(36, 129, 34) : Color.FromRgb(218, 55, 60));
         ToggleBtn.Content = running ? "⏹ ОСТАНОВИТЬ" : "▶ ЗАПУСТИТЬ";
         ToggleBtn.Background = new SolidColorBrush(running ? Color.FromRgb(218, 55, 60) : Color.FromRgb(88, 101, 242));
-        Log(running ? $"✓ Запущено: {strategy}" : "✗ Остановлено", running ? LogType.Info : LogType.Warning);
+        Log(running ? $"✓ Запущено: {strategy ?? "Unknown"}" : "✗ Остановлено", running ? LogType.Info : LogType.Warning);
     }
     private void Log(string msg, LogType type) {
         var color = type == LogType.Error ? "#FF5555" : type == LogType.Warning ? "#FFA61A" : "#00FF88";
@@ -89,7 +89,7 @@ public partial class MainWindow : Window {
 public class SettingsWindow : Window {
     public SettingsWindow() {
         Title = "Настройки"; Width = 450; Height = 350;
-        Background = (Brush)new BrushConverter().ConvertFrom("#2A2A3A");
+        Background = (Brush)new BrushConverter().ConvertFrom("#2A2A3A")!;
         var text = new TextBlock {
             Text = "⚙ Настройки\n\n" +
                    "Версия: 3.0.0\n\n" +
@@ -106,7 +106,7 @@ public class SettingsWindow : Window {
 public class DiagnosticsWindow : Window {
     public DiagnosticsWindow() {
         Title = "Диагностика"; Width = 550; Height = 450;
-        Background = (Brush)new BrushConverter().ConvertFrom("#2A2A3A");
+        Background = (Brush)new BrushConverter().ConvertFrom("#2A2A3A")!;
         var panel = new StackPanel { Margin = new Thickness(20) };
         var isAdmin = new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
         panel.Children.Add(CreateItem("🔐 Права администратора", isAdmin));
@@ -118,7 +118,7 @@ public class DiagnosticsWindow : Window {
     private Border CreateItem(string title, bool ok) {
         var p = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
         p.Children.Add(new TextBlock { Text = (ok ? "✓ " : "✗ ") + title, Foreground = ok ? Brushes.Green : Brushes.Red, FontSize = 15, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4) });
-        return new Border { Child = p, Padding = new Thickness(15), Background = (Brush)new BrushConverter().ConvertFrom("#2D2D3A"), CornerRadius = new CornerRadius(8) };
+        return new Border { Child = p, Padding = new Thickness(15), Background = (Brush)new BrushConverter().ConvertFrom("#2D2D3A")!, CornerRadius = new CornerRadius(8) };
     }
 }
 
