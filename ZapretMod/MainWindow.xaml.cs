@@ -22,10 +22,10 @@ public partial class MainWindow : Window
         _zapretEngine.StateChanged += ZapretEngine_StateChanged;
         
         LoadStrategies();
-        CheckAndDownloadBinaries();
+        CheckBinaries();
         
         Log.Information("ZapretMod GUI started");
-        AppendLog("=== ZapretMod запущен ===", LogType.Info);
+        AppendLog("═══ ZapretMod запущен ═══", LogType.Info);
     }
 
     private void LoadStrategies()
@@ -39,12 +39,12 @@ public partial class MainWindow : Window
         StrategyCombo.SelectionChanged += StrategyCombo_SelectionChanged;
         UpdateStrategyDescription();
         
-        // Event handlers
         ClearLogBtn.Click += (s, e) => LogBox.Clear();
         SaveLogBtn.Click += SaveLogBtn_Click;
         SettingsBtn.Click += (s, e) => new SettingsWindow().ShowDialog();
         DiagnosticsBtn.Click += (s, e) => new DiagnosticsWindow().ShowDialog();
         ServiceBtn.Click += (s, e) => OpenServiceManager();
+        DownloadBinariesBtn.Click += async (s, e) => await DownloadBinariesAsync();
         
         AutoStartCheck.Checked += (s, e) => {
             try { ServiceManager.InstallService(); AppendLog("✓ Автозапуск включен", LogType.Info); }
@@ -68,69 +68,88 @@ public partial class MainWindow : Window
                 Verb = "runas"
             });
         }
+    }
+
+    private void CheckBinaries()
+    {
+        var engine = new ZapretEngine();
+        if (engine.CheckBinaries())
+        {
+            AppendLog("✓ Все файлы найдены", LogType.Info);
+        }
         else
         {
-            MessageBox.Show("Файл service.bat не найден", "ZapretMod", MessageBoxButton.OK, MessageBoxImage.Warning);
+            AppendLog("⚠ Файлы не найдены! Нажмите '📥 Скачать файлы'", LogType.Warning);
         }
     }
 
-    private async void CheckAndDownloadBinaries()
+    private async System.Threading.Tasks.Task DownloadBinariesAsync()
     {
-        var binPath = Path.Combine(AppContext.BaseDirectory, "bin");
-        var winwsPath = Path.Combine(binPath, "winws.exe");
+        AppendLog("Начинаю скачивание файлов...", LogType.Info);
         
-        if (!File.Exists(winwsPath))
+        try
         {
-            AppendLog("⚠ winws.exe не найден. Скачивание...", LogType.Warning);
+            var binPath = Path.Combine(AppContext.BaseDirectory, "bin");
+            Directory.CreateDirectory(binPath);
             
-            try
+            using var client = new HttpClient();
+            client.Timeout = TimeSpan.FromSeconds(60);
+            
+            // Try multiple sources
+            var sources = new[]
             {
-                Directory.CreateDirectory(binPath);
-                
-                using var client = new HttpClient();
-                client.Timeout = TimeSpan.FromSeconds(30);
-                
-                var files = new Dictionary<string, string>
-                {
-                    { "winws.exe", "https://github.com/bol-van/zapret-win-bundle/releases/latest/download/winws.exe" },
-                    { "WinDivert64.sys", "https://github.com/bol-van/zapret-win-bundle/releases/latest/download/WinDivert64.sys" },
-                    { "WinDivert64.dll", "https://github.com/bol-van/zapret-win-bundle/releases/latest/download/WinDivert64.dll" }
-                };
-                
-                foreach (var file in files)
+                "https://raw.githubusercontent.com/bol-van/zapret-win-bundle/master/",
+                "https://github.com/bol-van/zapret-win-bundle/releases/latest/download/"
+            };
+            
+            var files = new[] { "winws.exe", "WinDivert64.sys", "WinDivert64.dll" };
+            bool allDownloaded = true;
+            
+            foreach (var fileName in files)
+            {
+                bool downloaded = false;
+                foreach (var source in sources)
                 {
                     try
                     {
-                        var data = await client.GetByteArrayAsync(file.Value);
-                        await File.WriteAllBytesAsync(Path.Combine(binPath, file.Key), data);
-                        AppendLog($"✓ Скачан {file.Key}", LogType.Info);
+                        var url = source + fileName;
+                        var data = await client.GetByteArrayAsync(url);
+                        
+                        if (data.Length > 100) // Validate file size
+                        {
+                            await File.WriteAllBytesAsync(Path.Combine(binPath, fileName), data);
+                            AppendLog($"✓ Скачан {fileName} ({data.Length / 1024} KB)", LogType.Info);
+                            downloaded = true;
+                            break;
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        AppendLog($"⚠ Не удалось скачать {file.Key}: {ex.Message}", LogType.Warning);
-                    }
+                    catch { }
                 }
                 
-                AppendLog("Скачивание завершено!", LogType.Info);
-                MessageBox.Show(
-                    "Бинарные файлы успешно скачаны!\n\nТеперь можно запустить защиту.",
-                    "ZapretMod",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                if (!downloaded)
+                {
+                    AppendLog($"✗ Не удалось скачать {fileName}", LogType.Error);
+                    allDownloaded = false;
+                }
             }
-            catch (Exception ex)
+            
+            if (allDownloaded)
             {
-                AppendLog($"✗ Ошибка скачивания: {ex.Message}", LogType.Error);
-                MessageBox.Show(
-                    $"Не удалось скачать файлы автоматически.\n\nСкачайте вручную:\nhttps://github.com/bol-van/zapret-win-bundle/releases\n\nОшибка: {ex.Message}",
-                    "ZapretMod",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                AppendLog("═══ Все файлы успешно скачаны! ═══", LogType.Info);
+                MessageBox.Show("✓ Все файлы успешно скачаны!\n\nТеперь можно запустить защиту.", 
+                    "ZapretMod", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("⚠ Не все файлы удалось скачать.\n\nПопробуйте скачать вручную:\nhttps://github.com/bol-van/zapret-win-bundle/releases", 
+                    "ZapretMod", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
-        else
+        catch (Exception ex)
         {
-            AppendLog("✓ winws.exe найден", LogType.Info);
+            AppendLog($"✗ Ошибка: {ex.Message}", LogType.Error);
+            MessageBox.Show($"Ошибка скачивания: {ex.Message}", "ZapretMod", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -180,17 +199,17 @@ public partial class MainWindow : Window
             if (e.IsRunning)
             {
                 StatusText.Text = "Работает";
-                StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(16, 124, 16));
+                StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(36, 129, 34));
                 ToggleButton.Content = "⏹ ОСТАНОВИТЬ";
-                ToggleButton.Background = new SolidColorBrush(Color.FromRgb(209, 52, 56));
+                ToggleButton.Background = new SolidColorBrush(Color.FromRgb(218, 55, 60));
                 AppendLog($"✓ Стратегия '{e.StrategyName}' запущена", LogType.Info);
             }
             else
             {
                 StatusText.Text = "Остановлено";
-                StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(209, 52, 56));
+                StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(218, 55, 60));
                 ToggleButton.Content = "▶ ЗАПУСТИТЬ";
-                ToggleButton.Background = new SolidColorBrush(Color.FromRgb(0, 120, 212));
+                ToggleButton.Background = new SolidColorBrush(Color.FromRgb(88, 101, 242));
                 AppendLog("✗ Остановлено", LogType.Warning);
             }
         });
@@ -207,6 +226,15 @@ public partial class MainWindow : Window
 
     private void AppendLog(string message, LogType type)
     {
+        var color = type switch
+        {
+            LogType.Error => "#FF5555",
+            LogType.Warning => "#FFA61A",
+            LogType.Info => "#00FF88",
+            LogType.Debug => "#888888",
+            _ => "#AAAAAA"
+        };
+        
         LogBox.AppendText($"\n{message}");
         LogBox.ScrollToEnd();
     }

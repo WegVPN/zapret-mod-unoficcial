@@ -3,9 +3,9 @@ chcp 65001 >nul
 title ZapretMod - Download Binaries
 cd /d "%~dp0"
 
-echo ============================================
-echo   ZapretMod - Downloading Required Files
-echo ============================================
+echo ════════════════════════════════════════════
+echo         ZapretMod - Download Binaries
+echo ════════════════════════════════════════════
 echo.
 
 set BIN_DIR=bin
@@ -21,9 +21,9 @@ echo Downloading WinDivert64.dll...
 powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/bol-van/zapret-win-bundle/releases/latest/download/WinDivert64.dll' -OutFile '%BIN_DIR%\WinDivert64.dll'}"
 
 echo.
-echo ============================================
+echo ════════════════════════════════════════════
 echo   Download Complete!
-echo ============================================
+echo ════════════════════════════════════════════
 echo.
 echo Files downloaded to: %CD%\%BIN_DIR%
 echo.

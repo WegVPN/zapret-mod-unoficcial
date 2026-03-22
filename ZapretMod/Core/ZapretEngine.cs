@@ -36,19 +36,9 @@ public class ZapretEngine : IDisposable
     {
         var winws = Path.Combine(_binPath, "winws.exe");
         var windivert = Path.Combine(_binPath, "WinDivert64.sys");
+        var windivertDll = Path.Combine(_binPath, "WinDivert64.dll");
         
-        if (!File.Exists(winws))
-        {
-            Log.Error("winws.exe not found in {Path}", _binPath);
-            return false;
-        }
-        
-        if (!File.Exists(windivert))
-        {
-            Log.Warning("WinDivert64.sys not found");
-        }
-        
-        return true;
+        return File.Exists(winws) && File.Exists(windivert) && File.Exists(windivertDll);
     }
 
     public void Start(StrategyConfig config)
@@ -58,7 +48,7 @@ public class ZapretEngine : IDisposable
         var winws = Path.Combine(_binPath, "winws.exe");
         
         if (!File.Exists(winws))
-            throw new FileNotFoundException("winws.exe not found", winws);
+            throw new FileNotFoundException("winws.exe not found. Please download binaries first.", winws);
 
         lock (_lock)
         {
@@ -230,7 +220,7 @@ public class ZapretEngine : IDisposable
             new StrategyConfig
             {
                 Name = "Discord + YouTube + Telegram",
-                Description = "Основной профиль для Discord, YouTube и Telegram. Рекомендуется для большинства пользователей.",
+                Description = "Основной профиль для всех сервисов. Рекомендуется для большинства пользователей.",
                 Wf = "l3",
                 Dpi = "fake",
                 Autottls = true,
@@ -250,7 +240,7 @@ public class ZapretEngine : IDisposable
             new StrategyConfig
             {
                 Name = "YouTube Only",
-                Description = "Только для YouTube",
+                Description = "Только для YouTube (4K стриминг)",
                 Wf = "l3",
                 Dpi = "fake",
                 Autottls = true,
@@ -260,7 +250,7 @@ public class ZapretEngine : IDisposable
             new StrategyConfig
             {
                 Name = "Telegram Only",
-                Description = "Только для Telegram",
+                Description = "Только для Telegram (мессенджер + proxy)",
                 Wf = "l3",
                 Dpi = "fake",
                 Ports = "443,80,8443",
@@ -279,7 +269,7 @@ public class ZapretEngine : IDisposable
             new StrategyConfig
             {
                 Name = "SIMPLE FAKE",
-                Description = "Простой fake метод",
+                Description = "Простой fake метод (минимальные задержки)",
                 Wf = "l3",
                 Dpi = "simple-fake",
                 Ports = "443,80"
