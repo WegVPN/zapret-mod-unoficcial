@@ -893,7 +893,6 @@ public partial class MainForm : Form
         _zapretManager.StateChanged += ZapretManager_StateChanged;
         _networkOptimizer.LogOutput += NetworkOptimizer_LogOutput;
         _networkOptimizer.OptimizationApplied += NetworkOptimizer_OptimizationApplied;
-        _profileManager.ProfileChanged += ProfileManager_ProfileChanged;
         _notifyIcon.DoubleClick += (s, e) => ShowWindow();
     }
 

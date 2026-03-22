@@ -7,17 +7,17 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Resources\zapret.ico</ApplicationIcon>
+    <!-- ApplicationIcon disabled for Linux build -->
     <AssemblyName>ZapretGUI</AssemblyName>
     <RootNamespace>ZapretGUI</RootNamespace>
     <Version>1.0.0</Version>
     <Authors>ZapretGUI Team</Authors>
     <Description>GUI wrapper for zapret DPI circumvention tool with network optimization</Description>
     <Copyright>Copyright © 2024</Copyright>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Win32.TaskScheduler" Version="2.11.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Serilog" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />

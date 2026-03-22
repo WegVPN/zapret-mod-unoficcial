@@ -9,7 +9,7 @@ namespace ZapretGUI.Core;
 /// <summary>
 /// Handles network optimization including TCP, DNS, and MTU settings
 /// </summary>
-public class NetworkOptimizer
+public class NetworkOptimizer : IDisposable
 {
     private const string TcpRegistryPath = @"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters";
     private const string NetworkInterfaceRegistryPath = @"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces";
@@ -191,9 +191,10 @@ public class NetworkOptimizer
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-        
-        await process.WaitForExitAsync(TimeSpan.FromSeconds(10));
-        
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await process.WaitForExitAsync(cts.Token);
+
         return output.ToString().Trim();
     }
 
@@ -407,8 +408,9 @@ public class NetworkOptimizer
 
             using var process = new Process { StartInfo = startInfo };
             process.Start();
-            await process.WaitForExitAsync(TimeSpan.FromSeconds(5));
-            
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await process.WaitForExitAsync(cts.Token);
+
             OnLogOutput("DNS cache flushed", LogType.Info);
             return true;
         }
@@ -676,7 +678,8 @@ public class NetworkOptimizer
 
             using var process = new Process { StartInfo = startInfo };
             process.Start();
-            await process.WaitForExitAsync(TimeSpan.FromSeconds(30));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await process.WaitForExitAsync(cts.Token);
 
             OnLogOutput($"System restore point created: {description}", LogType.Info);
             return true;
@@ -696,6 +699,12 @@ public class NetworkOptimizer
     private void OnLogOutput(string message, LogType type)
     {
         LogOutput?.Invoke(this, new LogEventArgs(message, type));
+    }
+
+    public void Dispose()
+    {
+        // No unmanaged resources to dispose
+        GC.SuppressFinalize(this);
     }
 
     #endregion
@@ -814,7 +823,8 @@ public class RegistryBackup
 
         using var process = new Process { StartInfo = startInfo };
         process.Start();
-        await process.WaitForExitAsync(TimeSpan.FromSeconds(10));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await process.WaitForExitAsync(cts.Token);
     }
 
     private async Task ImportLatestRegistryBackupAsync(string searchPattern)
@@ -835,7 +845,8 @@ public class RegistryBackup
 
             using var process = new Process { StartInfo = startInfo };
             process.Start();
-            await process.WaitForExitAsync(TimeSpan.FromSeconds(10));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await process.WaitForExitAsync(cts.Token);
         }
     }
 }

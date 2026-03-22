@@ -13,6 +13,11 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Published output
+publish/
+*.zip
+
+
 # Visual Studio cache/options
 .vs/
 *.suo

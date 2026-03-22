@@ -1,5 +1,6 @@
 using Serilog;
 using ZapretGUI.Core;
+using System.Runtime.InteropServices;
 
 namespace ZapretGUI;
 
