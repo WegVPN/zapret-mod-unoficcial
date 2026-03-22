@@ -1,2 +1,3 @@
 -keep class com.zapretmod.** { *; }
 -keep class androidx.compose.** { *; }
+-keep class androidx.lifecycle.** { *; }

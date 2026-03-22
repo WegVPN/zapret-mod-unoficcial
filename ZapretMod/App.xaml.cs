@@ -1,24 +1,14 @@
 using System.IO;
 using System.Windows;
 using Serilog;
-
 namespace ZapretMod;
-
-public partial class App : Application
-{
-    protected override void OnStartup(StartupEventArgs e)
-    {
+public partial class App : Application {
+    protected override void OnStartup(StartupEventArgs e) {
         base.OnStartup(e);
-        var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ZapretMod", "Logs", "app-.log");
-        Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-        Log.Logger = new LoggerConfiguration().MinimumLevel.Information().WriteTo.File(logPath, rollingInterval: RollingInterval.Day).CreateLogger();
-        Log.Information("=== ZapretMod v3.0.0 Starting ===");
+        var log = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ZapretMod", "Logs", "app-.log");
+        Directory.CreateDirectory(Path.GetDirectoryName(log)!);
+        Log.Logger = new LoggerConfiguration().MinimumLevel.Information().WriteTo.File(log, rollingInterval: RollingInterval.Day).CreateLogger();
+        Log.Information("=== ZapretMod v3.0 Starting ===");
     }
-
-    protected override void OnExit(ExitEventArgs e)
-    {
-        Log.Information("=== ZapretMod Exiting ===");
-        Log.CloseAndFlush();
-        base.OnExit(e);
-    }
+    protected override void OnExit(ExitEventArgs e) { Log.Information("=== ZapretMod Exiting ==="); Log.CloseAndFlush(); base.OnExit(e); }
 }

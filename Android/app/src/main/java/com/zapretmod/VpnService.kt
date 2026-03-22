@@ -35,8 +35,13 @@ class VpnService : VpnService() {
             .setMtu(1500)
             .addRoute("0.0.0.0", 0)
         
-        // Add allowed apps (Discord, YouTube, Telegram)
-        listOf("com.discord", "com.google.android.youtube", "org.telegram.messenger").forEach { pkg ->
+        // Оптимизация - разрешаем только нужные приложения
+        listOf(
+            "com.discord", "com.aliucord",
+            "com.google.android.youtube", "com.google.android.apps.youtube.music",
+            "org.telegram.messenger", "org.telegram.plus", "org.thunderdog.challegram",
+            "com.vivaldi.browser", "com.android.chrome", "org.mozilla.firefox"
+        ).forEach { pkg ->
             try { builder.addAllowedApplication(pkg) } catch (e: Exception) {}
         }
         
@@ -59,10 +64,13 @@ class VpnService : VpnService() {
     }
 
     private fun showNotification() {
+        val intent = Intent(this, MainActivity::class.java)
+        val pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val notification = NotificationCompat.Builder(this, "vpn")
             .setContentTitle("ZapretMod")
-            .setContentText("VPN активен")
+            .setContentText("VPN активен - защита работает")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(pi)
             .setOngoing(true)
             .build()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
