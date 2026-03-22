@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.IO;
 using System.ServiceProcess;
 using Microsoft.Win32;
 using Serilog;

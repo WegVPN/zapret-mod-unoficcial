@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using Serilog;
 
@@ -24,7 +25,6 @@ public partial class App : Application
                 logPath,
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 7)
-            .WriteTo.Debug()
             .CreateLogger();
 
         Log.Information("=== ZapretMod Starting ===");
@@ -32,6 +32,8 @@ public partial class App : Application
 
         var mainWindow = new MainWindow();
         mainWindow.Show();
+        
+        this.MainWindow = mainWindow;
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -40,4 +42,6 @@ public partial class App : Application
         Log.CloseAndFlush();
         base.OnExit(e);
     }
+    
+    public new MainWindow MainWindow { get; private set; } = null!;
 }

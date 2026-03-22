@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -8,7 +9,7 @@ using Hardcodet.Wpf.TaskbarNotification;
 
 namespace ZapretMod;
 
-public partial class MainWindow : Window
+public class MainWindow : Window
 {
     private readonly ZapretEngine _zapretEngine;
     private TaskbarIcon? _notifyIcon;
@@ -69,17 +70,11 @@ public partial class MainWindow : Window
             Background = bgColor
         };
 
-        var mainRows = new RowDefinitionCollection
-        {
-            new RowDefinition { Height = GridLength.Auto },      // Header
-            new RowDefinition { Height = GridLength.Auto },      // Strategy
-            new RowDefinition { Height = GridLength.Auto },      // Options
-            new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }, // Logs
-            new RowDefinition { Height = GridLength.Auto }       // Footer
-        };
-
-        for (int i = 0; i < 5; i++)
-            _mainGrid.RowDefinitions.Add(mainRows[i]);
+        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Header
+        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Strategy
+        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Options
+        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Logs
+        _mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });      // Footer
 
         // Header
         _headerPanel = new StackPanel

@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>zapret.ico</ApplicationIcon>
+    <!-- ApplicationIcon disabled - add zapret.ico to enable -->
     <AssemblyName>ZapretMod</AssemblyName>
     <RootNamespace>ZapretMod</RootNamespace>
     <Version>2.0.0</Version>
