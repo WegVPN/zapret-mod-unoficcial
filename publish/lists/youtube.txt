@@ -1,0 +1,9 @@
+# YouTube domains for DPI bypass
+youtube.com
+www.youtube.com
+ytimg.com
+www.ytimg.com
+googlevideo.com
+www.googlevideo.com
+youtube-nocookie.com
+youtu.be
