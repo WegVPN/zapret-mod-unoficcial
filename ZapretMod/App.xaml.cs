@@ -9,21 +9,10 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-
-        var logPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "ZapretMod",
-            "Logs",
-            "app-.log");
-
+        var logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ZapretMod", "Logs", "app-.log");
         Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
-
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
-            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
-            .CreateLogger();
-
-        Log.Information("=== ZapretMod Starting ===");
+        Log.Logger = new LoggerConfiguration().MinimumLevel.Information().WriteTo.File(logPath, rollingInterval: RollingInterval.Day).CreateLogger();
+        Log.Information("=== ZapretMod v3.0.0 Starting ===");
     }
 
     protected override void OnExit(ExitEventArgs e)

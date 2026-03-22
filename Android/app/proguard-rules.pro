@@ -1,0 +1,2 @@
+-keep class com.zapretmod.** { *; }
+-keep class androidx.compose.** { *; }

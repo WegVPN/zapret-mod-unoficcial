@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -7,331 +8,68 @@ namespace ZapretMod.Core;
 
 public class ZapretEngine : IDisposable
 {
-    private Process? _process;
-    private readonly object _lock = new();
+    private Process? _p;
     private bool _disposed;
-    private readonly string _binPath;
+    private readonly string _bin;
 
     public event EventHandler<LogEventArgs>? LogOutput;
     public event EventHandler<StateChangedEventArgs>? StateChanged;
+    public bool Running => _p != null && !_p.HasExited;
 
-    public bool IsRunning => _process != null && !_process.HasExited;
-    public string? CurrentStrategy { get; private set; }
-    public StrategyConfig? CurrentConfig { get; private set; }
+    public ZapretEngine() => _bin = Path.Combine(AppContext.BaseDirectory, "bin");
 
-    public ZapretEngine(string? binPath = null)
+    public bool CheckFiles() => File.Exists(Path.Combine(_bin, "winws.exe")) && File.Exists(Path.Combine(_bin, "WinDivert64.sys"));
+
+    public void Start(StrategyConfig cfg)
     {
-        _binPath = binPath ?? Path.Combine(AppContext.BaseDirectory, "bin");
-    }
-
-    public void Initialize()
-    {
-        if (!Directory.Exists(_binPath))
-            Directory.CreateDirectory(_binPath);
-        
-        Log.Information("ZapretEngine initialized. Bin path: {Path}", _binPath);
-    }
-
-    public bool CheckBinaries()
-    {
-        var winws = Path.Combine(_binPath, "winws.exe");
-        var windivert = Path.Combine(_binPath, "WinDivert64.sys");
-        var windivertDll = Path.Combine(_binPath, "WinDivert64.dll");
-        
-        return File.Exists(winws) && File.Exists(windivert) && File.Exists(windivertDll);
-    }
-
-    public void Start(StrategyConfig config)
-    {
-        if (_disposed) throw new ObjectDisposedException(nameof(ZapretEngine));
-
-        var winws = Path.Combine(_binPath, "winws.exe");
-        
-        if (!File.Exists(winws))
-            throw new FileNotFoundException("winws.exe not found. Please download binaries first.", winws);
-
-        lock (_lock)
-        {
-            Stop();
-
-            var arguments = BuildArguments(config);
-            Log.Information("Starting winws with strategy: {Strategy}, args: {Args}", config.Name, arguments);
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = winws,
-                Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8,
-                WorkingDirectory = _binPath
-            };
-
-            _process = new Process { StartInfo = startInfo };
-            _process.OutputDataReceived += OnOutputDataReceived;
-            _process.ErrorDataReceived += OnErrorDataReceived;
-            _process.Exited += OnProcessExited;
-            _process.EnableRaisingEvents = true;
-
-            try
-            {
-                _process.Start();
-                _process.BeginOutputReadLine();
-                _process.BeginErrorReadLine();
-                
-                CurrentConfig = config;
-                CurrentStrategy = config.Name;
-                
-                Log.Information("winws started with PID: {Pid}", _process.Id);
-                StateChanged?.Invoke(this, new StateChangedEventArgs(true, config.Name));
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to start winws");
-                throw;
-            }
-        }
+        var exe = Path.Combine(_bin, "winws.exe");
+        if (!File.Exists(exe)) throw new FileNotFoundException("winws.exe не найден! Скачайте файлы.", exe);
+        Stop();
+        var args = BuildArgs(cfg);
+        Log.Information("Start: {Args}", args);
+        var si = new ProcessStartInfo { FileName = exe, Arguments = args, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = _bin };
+        _p = new Process { StartInfo = si };
+        _p.OutputDataReceived += (s, e) => { if (e.Data != null) LogOutput?.Invoke(this, new LogEventArgs(e.Data, LogType.Info)); };
+        _p.ErrorDataReceived += (s, e) => { if (e.Data != null) LogOutput?.Invoke(this, new LogEventArgs(e.Data, LogType.Error)); };
+        _p.Exited += (s, e) => { _p = null; StateChanged?.Invoke(this, new StateChangedEventArgs(false, null)); };
+        _p.EnableRaisingEvents = true;
+        _p.Start();
+        _p.BeginOutputReadLine();
+        _p.BeginErrorReadLine();
+        StateChanged?.Invoke(this, new StateChangedEventArgs(true, cfg.Name));
     }
 
     public void Stop()
     {
-        lock (_lock)
-        {
-            if (_process != null && !_process.HasExited)
-            {
-                Log.Information("Stopping winws (PID: {Pid})", _process.Id);
-                
-                try
-                {
-                    if (!_process.CloseMainWindow())
-                    {
-                        _process.Kill();
-                    }
-                    _process.WaitForExit(5000);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Error stopping winws");
-                }
-                finally
-                {
-                    _process.OutputDataReceived -= OnOutputDataReceived;
-                    _process.ErrorDataReceived -= OnErrorDataReceived;
-                    _process.Exited -= OnProcessExited;
-                    _process.Dispose();
-                    _process = null;
-                }
-
-                CurrentConfig = null;
-                CurrentStrategy = null;
-                StateChanged?.Invoke(this, new StateChangedEventArgs(false, null));
-                Log.Information("winws stopped");
-            }
-        }
+        if (_p != null && !_p.HasExited) { _p.Kill(); _p.WaitForExit(); _p = null; StateChanged?.Invoke(this, new StateChangedEventArgs(false, null)); }
     }
 
-    public void Restart(StrategyConfig config)
+    private string BuildArgs(StrategyConfig c)
     {
-        Stop();
-        Thread.Sleep(500);
-        Start(config);
+        var sb = new StringBuilder();
+        if (!string.IsNullOrEmpty(c.Wf)) sb.Append($"--wf={c.Wf} ");
+        if (!string.IsNullOrEmpty(c.Dpi)) sb.Append($"--dpi-desync={c.Dpi} ");
+        if (c.Oob) sb.Append("--dpi-desync-fake-tls=oob ");
+        if (c.Autottls) sb.Append("--dpi-desync-autottls=1 ");
+        if (!string.IsNullOrEmpty(c.Ports)) sb.Append($"--ports={c.Ports} ");
+        if (!string.IsNullOrEmpty(c.Extra)) sb.Append(c.Extra);
+        return sb.ToString().Trim();
     }
 
-    private string BuildArguments(StrategyConfig config)
+    public void Dispose() { if (!_disposed) { Stop(); _disposed = true; GC.SuppressFinalize(this); } }
+
+    public static StrategyConfig[] GetStrategies() => new[]
     {
-        var args = new StringBuilder();
-
-        if (!string.IsNullOrEmpty(config.Wf))
-            args.Append($"--wf={config.Wf} ");
-        
-        if (!string.IsNullOrEmpty(config.Dpi))
-            args.Append($"--dpi-desync={config.Dpi} ");
-        
-        if (config.Oob)
-            args.Append("--dpi-desync-fake-tls=oob ");
-        
-        if (!string.IsNullOrEmpty(config.FakeTls))
-            args.Append($"--dpi-desync-fake-tls={config.FakeTls} ");
-        
-        if (config.Autottls)
-            args.Append("--dpi-desync-autottls=1 ");
-        
-        if (config.Nat)
-            args.Append("--nat ");
-        
-        if (!string.IsNullOrEmpty(config.Ports))
-            args.Append($"--ports={config.Ports} ");
-        
-        if (!string.IsNullOrEmpty(config.IpList))
-            args.Append($"--ip-list={config.IpList} ");
-        
-        if (!string.IsNullOrEmpty(config.DomainList))
-            args.Append($"--domain-list={config.DomainList} ");
-
-        if (!string.IsNullOrEmpty(config.ExtraArgs))
-            args.Append($" {config.ExtraArgs}");
-
-        return args.ToString().Trim();
-    }
-
-    private void OnOutputDataReceived(object sender, DataReceivedEventArgs e)
-    {
-        if (!string.IsNullOrEmpty(e.Data))
-        {
-            Log.Information("winws: {Message}", e.Data);
-            LogOutput?.Invoke(this, new LogEventArgs(e.Data, LogType.Info));
-        }
-    }
-
-    private void OnErrorDataReceived(object sender, DataReceivedEventArgs e)
-    {
-        if (!string.IsNullOrEmpty(e.Data))
-        {
-            Log.Error("winws error: {Message}", e.Data);
-            LogOutput?.Invoke(this, new LogEventArgs(e.Data, LogType.Error));
-        }
-    }
-
-    private void OnProcessExited(object? sender, EventArgs e)
-    {
-        Log.Warning("winws process exited unexpectedly");
-        _process?.Dispose();
-        _process = null;
-        StateChanged?.Invoke(this, new StateChangedEventArgs(false, CurrentStrategy));
-    }
-
-    public void Dispose()
-    {
-        if (!_disposed)
-        {
-            Stop();
-            _disposed = true;
-            GC.SuppressFinalize(this);
-        }
-    }
-
-    public static List<StrategyConfig> GetBuiltInStrategies()
-    {
-        return new List<StrategyConfig>
-        {
-            new StrategyConfig
-            {
-                Name = "Discord + YouTube + Telegram",
-                Description = "Основной профиль для всех сервисов. Рекомендуется для большинства пользователей.",
-                Wf = "l3",
-                Dpi = "fake",
-                Autottls = true,
-                Ports = "443,80,8443",
-                ExtraArgs = "--dpi-desync-fake-tls=oob"
-            },
-            new StrategyConfig
-            {
-                Name = "Discord Only",
-                Description = "Только для Discord (включая голосовые каналы)",
-                Wf = "l3",
-                Dpi = "fake",
-                Autottls = true,
-                Ports = "443,80",
-                ExtraArgs = "--dpi-desync-fake-tls=oob"
-            },
-            new StrategyConfig
-            {
-                Name = "YouTube Only",
-                Description = "Только для YouTube (4K стриминг)",
-                Wf = "l3",
-                Dpi = "fake",
-                Autottls = true,
-                Ports = "443,80",
-                ExtraArgs = "--dpi-desync-fake-tls=oob"
-            },
-            new StrategyConfig
-            {
-                Name = "Telegram Only",
-                Description = "Только для Telegram (мессенджер + proxy)",
-                Wf = "l3",
-                Dpi = "fake",
-                Ports = "443,80,8443",
-                ExtraArgs = "--dpi-desync-fake-tls=oob"
-            },
-            new StrategyConfig
-            {
-                Name = "FAKE TLS AUTO",
-                Description = "Автоматический выбор fake TLS параметров",
-                Wf = "l3",
-                Dpi = "fake",
-                Autottls = true,
-                Oob = true,
-                Ports = "443,80"
-            },
-            new StrategyConfig
-            {
-                Name = "SIMPLE FAKE",
-                Description = "Простой fake метод (минимальные задержки)",
-                Wf = "l3",
-                Dpi = "simple-fake",
-                Ports = "443,80"
-            },
-            new StrategyConfig
-            {
-                Name = "Custom",
-                Description = "Пользовательская конфигурация",
-                Wf = "",
-                Dpi = "",
-                ExtraArgs = ""
-            }
-        };
-    }
+        new StrategyConfig { Name = "Discord + YouTube + Telegram", Description = "Основной профиль для всех сервисов", Wf = "l3", Dpi = "fake", Autottls = true, Ports = "443,80,8443", Extra = "--dpi-desync-fake-tls=oob" },
+        new StrategyConfig { Name = "Discord Only", Description = "Только Discord", Wf = "l3", Dpi = "fake", Autottls = true, Ports = "443,80" },
+        new StrategyConfig { Name = "YouTube Only", Description = "Только YouTube", Wf = "l3", Dpi = "fake", Autottls = true, Ports = "443,80" },
+        new StrategyConfig { Name = "Telegram Only", Description = "Только Telegram", Wf = "l3", Dpi = "fake", Ports = "443,80,8443" },
+        new StrategyConfig { Name = "FAKE TLS AUTO", Description = "Автоматический fake TLS", Wf = "l3", Dpi = "fake", Autottls = true, Oob = true, Ports = "443,80" },
+        new StrategyConfig { Name = "SIMPLE FAKE", Description = "Простой метод", Wf = "l3", Dpi = "simple-fake", Ports = "443,80" }
+    };
 }
 
-public class StrategyConfig
-{
-    public string Name { get; set; } = "";
-    public string Description { get; set; } = "";
-    public string Wf { get; set; } = "";
-    public string Dpi { get; set; } = "";
-    public bool Oob { get; set; }
-    public string? FakeTls { get; set; }
-    public bool Autottls { get; set; }
-    public bool Nat { get; set; }
-    public string? Ports { get; set; }
-    public string? IpList { get; set; }
-    public string? DomainList { get; set; }
-    public string? ExtraArgs { get; set; }
-    
-    public override string ToString() => Name;
-}
-
-public class LogEventArgs : EventArgs
-{
-    public string Message { get; }
-    public LogType Type { get; }
-
-    public LogEventArgs(string message, LogType type)
-    {
-        Message = message;
-        Type = type;
-    }
-}
-
-public enum LogType
-{
-    Info,
-    Error,
-    Warning,
-    Debug
-}
-
-public class StateChangedEventArgs : EventArgs
-{
-    public bool IsRunning { get; }
-    public string? StrategyName { get; }
-
-    public StateChangedEventArgs(bool isRunning, string? strategyName)
-    {
-        IsRunning = isRunning;
-        StrategyName = strategyName;
-    }
-}
+public class StrategyConfig { public string Name { get; set; } = ""; public string Description { get; set; } = ""; public string Wf { get; set; } = ""; public string Dpi { get; set; } = ""; public bool Oob { get; set; } public bool Autottls { get; set; } public string Ports { get; set; } = ""; public string Extra { get; set; } = ""; public override string ToString() => Name; }
+public class LogEventArgs(string msg, LogType t) : EventArgs { public string Message => msg; public LogType Type => t; }
+public class StateChangedEventArgs(bool r, string? s) : EventArgs { public bool IsRunning => r; public string? Strategy => s; }
+public enum LogType { Info, Error, Warning }

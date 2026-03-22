@@ -1,23 +1,5 @@
-# Build results
-bin/Release/
-bin/Debug/
+bin/
 obj/
 publish/
-
-# Visual Studio
-.vs/
-*.suo
 *.user
-
-# Logs
-*.log
-Logs/
-
-# OS
-Thumbs.db
-Desktop.ini
-
-# Downloaded (keep placeholder)
-bin/winws.exe
-bin/WinDivert64.sys
-bin/WinDivert64.dll
+*.suo

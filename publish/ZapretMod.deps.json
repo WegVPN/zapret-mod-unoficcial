@@ -7,7 +7,7 @@
   "targets": {
     ".NETCoreApp,Version=v8.0": {},
     ".NETCoreApp,Version=v8.0/win-x64": {
-      "ZapretMod/2.0.0": {
+      "ZapretMod/3.0.0": {
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.2.2",
           "Hardcodet.NotifyIcon.Wpf": "2.0.1",
@@ -85,7 +85,7 @@
     }
   },
   "libraries": {
-    "ZapretMod/2.0.0": {
+    "ZapretMod/3.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

@@ -6,10 +6,9 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>ZapretMod</AssemblyName>
     <RootNamespace>ZapretMod</RootNamespace>
-    <Version>2.0.0</Version>
+    <Version>3.0.0</Version>
     <Authors>ZapretMod Team</Authors>
     <Description>Modern GUI for zapret DPI bypass - Discord, YouTube, Telegram</Description>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
